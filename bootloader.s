@@ -1,3 +1,10 @@
+; Custom bootloader for Jumpman testing
+;
+; Modified from my 3 sector boot sector DOS menu
+;
+; Copyright (c) 1984, 2016 Rob McMullen <feedback@playermissile.com>
+; Licensed under the GPLv3; see playermissile.com for more info
+
         .macpack atari
 
         .segment "BOOTLOADER"
