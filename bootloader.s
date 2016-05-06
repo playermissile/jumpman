@@ -145,7 +145,7 @@ screen:
 ;        scrcode "JUMPMAN LEVEL TESTER"
         .byte $ea,$f5,$ed,$f0,$ed,$e1,$ee,$00,$ec,$e5,$f6,$e5,$ec,$00,$f4,$e5,$f3,$f4,$e5,$f2 ; $14 data bytes
 
-        scrcode "       FROM         "
+        scrcode "        FROM        "
         scrcode " playermissile"
         .byte $4e
         scrcode "com  "
