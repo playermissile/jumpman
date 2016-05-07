@@ -7,6 +7,22 @@
 ; on disk but is still loaded during the boot process. It ends up
 ; in memory at $6300 - $67ff, so we have 5 pages to work with.
 
+        .macpack atari
+
+vbreak = $206
+sdlstl = $230
+gprior = $26f
+prior = $d01b
+audc1 = $d201
+audc2 = $d203
+audc3 = $d205
+audc4 = $d207
+audctl = $d208
+dlistl = $d402
+dlisth = $d403
+nmien = $d40e
+setvbv = $e45c
+
        .segment "JMHACK1"
        .ORG $6300
 
@@ -124,6 +140,10 @@ xexinit: ; entry point for XEX boot
         lda #$ff        ; flag to load test level instead of accessing disk
         sta $30ef
         sta fastload
+        lda #<youbigdummy
+        sta vbreak
+        lda #>youbigdummy
+        sta vbreak + 1
         jmp practice2
 
         ;jmp $55c0       ; jump to entry point right after loading sectors
@@ -274,6 +294,169 @@ copypg: sta @1 + 2
         bne @1
         rts
 
+; Harvest table crash page. Intercept the BRK operator that occurs
+; when there's a harvest table miss and display the relevant info.
+; We are in an interrupt handler here, so need to end with RTI
+youbigdummy:
+        lda $bc         ; checksum value
+        jsr hex2text
+        sta scrchecksum
+        stx scrchecksum + 1
+        lda $2846
+        jsr hex2text
+        sta scroffsetx
+        stx scroffsetx + 1
+        lda $2847
+        jsr hex2text
+        sta scroffsety
+        stx scroffsety + 1
+        lda $306a
+        jsr hex2text
+        sta scrjumpmanx
+        stx scrjumpmanx + 1
+        lda $306f
+        jsr hex2text
+        sta scrjumpmany
+        stx scrjumpmany + 1
+
+        lda $bb
+        jsr hex2text
+        sta scrpeanutaddr
+        stx scrpeanutaddr + 1
+        lda $ba
+        jsr hex2text
+        sta scrpeanutaddr + 2
+        stx scrpeanutaddr + 3
+        lda #<scrpeanuts
+        sta $82
+        lda #>scrpeanuts
+        sta $83
+        ldy #0
+        sty $84
+        sty $85
+ploop:
+        ldy $85
+        lda ($ba),y
+        cmp #$ff
+        beq showdl
+        sty $85
+        jsr hex2text
+        ldy $84
+        sta ($82),y
+        iny
+        txa
+        sta ($82),y
+        iny
+        iny
+        iny
+        sty $84
+        clc
+        lda $85
+        adc #7
+        sta $85
+        bcc ploop       ; don't go into endless loop if missing FF
+
+
+showdl:
+        lda #<dummydl
+        sta sdlstl
+        sta dlistl
+        lda #>dummydl
+        sta dlisth
+        sta sdlstl + 1
+        lda #$40
+        sta nmien
+        lda #0
+        sta audctl
+        sta audc1
+        sta audc2
+        sta audc3
+        sta audc4
+        lda #$14
+        sta gprior
+        sta prior
+        ldx #$e4
+        ldy #$62
+        lda #$07
+        jsr setvbv
+
+        pla             ; mess with stack to return to our wait loop
+        sta $80         ; there are two vars on the stack, then the return
+        pla             ; address.
+        pla
+        lda #>wait
+        pha
+        lda #<wait
+        pha
+        lda $80
+        pha
+        rti
+        nop
+        nop
+        nop
+wait:   nop
+        nop
+        nop
+@1:     jmp @1
+
+; convert hex value in A to two characters, high nibble returned
+; in A, low nibble in X
+hex2text:
+        tay     ; save temporarily
+        and #$0f
+        cmp #$a
+        bcc @1
+        adc #6  ; oooh! Save a byte! Operation we want is +7, but carry is guaranteed to be set
+@1:     adc #16
+        tax
+        tya
+        lsr a
+        lsr a
+        lsr a
+        lsr a
+        cmp #$a
+        bcc @2
+        adc #6
+@2:     adc #16
+        rts
+
+
+
+dummydl:
+        .byte $70,$70,$70,$70,$70 ; 3x 8 BLANK
+        .byte $47,<dummyscreen,>dummyscreen ; LMS MODE 6
+        .byte $70,$06,$06,$06,$06,$06,$70
+        .byte 7,6,6,6,6,6,6,6
+        .byte $41,<dummydl,>dummydl
+
+dummyscreen:
+        scrcode "PEANUT HARVEST ERROR"
+        scrcode "00BC CHECKSUM: "
+scrchecksum:
+        scrcode "FF   "
+        scrcode "284E OFFSET X: "
+scroffsetx:
+        scrcode "FF   "
+        scrcode "284F OFFSET Y: "
+scroffsety:
+        scrcode "FF   "
+        scrcode "306A JUMPMAN X: "
+scrjumpmanx:
+        scrcode "FF  "
+        scrcode "306F JUMPMAN Y: "
+scrjumpmany:
+        scrcode "FF  "
+        scrcode "HARVEST TABLE: "
+scrpeanutaddr:
+        scrcode "XXXX "
+scrpeanuts:
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "                    "
 
 
 ; copy of code from 2476: game options screen
