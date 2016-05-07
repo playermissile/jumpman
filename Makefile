@@ -15,7 +15,7 @@ bootloader.obj : bootloader.o bootloader.lnk
 bootloader.lst bootloader.o : bootloader.s
 	ca65 -l bootloader.lst bootloader.s -o bootloader.o
 
-levelbuilder.atr: bootloader.obj jumpman_ext.obj
+levelbuilder.atr: bootloader.obj jumpman_ext.obj levelbuilder2.xex
 	python xex2atr.py -o levelbuilder.atr -b bootloader.obj levelbuilder2.xex
 	python insert-bin.py -o levelbuilder.atr levelbuilder.atr jumpman_ext.obj 22438
 
