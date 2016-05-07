@@ -14,8 +14,11 @@ xsave = $19
 addr = $43
 endaddr = $45
 buffer = $100 ; first half of the stack is unlikely to be used. Only works for single density, though!
+sdlstl = $230
 initad = $02e2
 runad = $02e0
+dlistl = $d402
+dlisth = $d403
 
 ; copying the kboot format
         .byte $00,$03,$00,$07,<init,>init ; boot header
@@ -46,9 +49,11 @@ init:
         sta $0305    ; DBUFHI
 
         lda #<dlist
-        sta $0230    ; SDLSTL
+        sta sdlstl
+        sta dlistl
         lda #>dlist
-        sta $0231    ; SDLSTH
+        sta sdlstl + 1
+        sta dlisth
 
         lda #0
         tax
