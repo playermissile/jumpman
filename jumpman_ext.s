@@ -9,6 +9,7 @@
 
         .macpack atari
 
+; OS definitions
 atract = $4d
 vbreak = $206
 sdlstl = $230
@@ -23,6 +24,12 @@ dlistl = $d402
 dlisth = $d403
 nmien = $d40e
 setvbv = $e45c
+
+; Jumpman definitions
+joy_vert = $3020
+joy_horz = $3024
+joy_btn = $302c
+
 
        .segment "JMHACK1"
        .ORG $6300
@@ -166,6 +173,9 @@ practice: ; new code to load in practice level sector
         lda #0
         sta atract
         ; note! Select is automatically coded to go back to game options screen!
+        lda #0
+        sta practice_level
+        jsr show_instructions
 
 tone:
         lda #$13
@@ -180,42 +190,71 @@ tone:
         bne @1          ; wait for tone to get done playing
 
         lda #$30
-        jsr $56b6
+        jsr $56b6       ; partial delay; $30x$ff, not full $ffx$ff
 
-stick:
-        lda $3020
-        jsr hex2text
-        sta levelnums
-        stx levelnums + 1
-        lda $3024
-        jsr hex2text
-        sta levelnums +20
-        stx levelnums +20 + 1
-        lda $302c
-        jsr hex2text
-        sta levelnums + 40
-        stx levelnums + 40 + 1
-
-        lda $3020
-        cmp #0
+updown:
+        ldy joy_horz
+        cpy #0
         beq leftright
+        ldx practice_level
+        bne @up
+        ldx #1
+        bne @store
+@up:    cpy #0
+        bmi @down
+        inx
+        cpx #33
+        bcc @store
+        ldx #1
+        bne @store
+@down:  dex
+        bne @store
+        ldx #32
+@store: stx practice_level
+        jsr show_instructions
 
         jmp tone
 
 leftright:
-        lda $3024
-        cmp #0
+        ldy joy_vert
+        cpy #0
         beq button
+        lda practice_level
+        bne @right
+        lda #1
+        bne @store
+@right: cpy #0
+        bmi @left
+        cmp #32
+        bne @1
+        lda #1
+        bne @store
+@1:     clc
+        adc #8
+        cmp #33
+        bcc @store
+        sec
+        sbc #31
+        bne @store
+@left:  cmp #1
+        bne @2
+        lda #32
+        bne @store
+@2:     sec
+        sbc #8
+        beq @wrap
+        bpl @store
+@wrap:  clc
+        adc #31
+@store: sta practice_level
+        jsr show_instructions
 
         jmp tone
 
 button:
-        lda $302c
+        lda joy_btn
         cmp #1
-        beq stick
-
-        lda #26
-        sta practice_level
+        beq updown
 
         lda practice_level
         sta $82
@@ -262,6 +301,30 @@ practice2:
         lda #0          ; force one player
         jmp $0a12       ; skip over the display list portion of $0a00
 
+show_instructions: ; check to see if this the first time
+        lda practice_level
+        beq basic_instructions
+        ldy #20
+@1:     lda trigger_instructions - 1,y
+        sta line1 - 1,y
+        lda #0
+        sta line2 - 1,y
+        dey
+        bne @1
+        lda practice_level
+        jsr hex2text
+        sta line2
+        stx line2 + 1
+        rts
+basic_instructions:
+        ldy #40
+@1:     lda joy_instructions - 1,y
+        sta line1 - 1,y
+        dey
+        bne @1
+        rts
+
+
 practicedl:
         .byte $70,$70,$70 ; 3x 8 BLANK
         .byte $47,<practicescreen,>practicescreen
@@ -282,25 +345,20 @@ levelnums:
         scrcode "  7   15   23   29  "
         scrcode "  8   16   24   30  "
 line1:
-        invscrcode "choose with "
-        scrcode "joystick"
+        scrcode "                    "
 line2:
-        ;scrcode "                    "
-        ;.byte $c0,$c0,$c0,$c0,$e5,$e1,$f3,$f9,$c0,$e4,$ef,$e5,$f3,$c0,$e9,$f4,$c0,$c0,$c0,$c0
-        invscrcode "push "
-        scrcode "select"
-        invscrcode " for menu"
+        scrcode "                    "
 joy_instructions:
         invscrcode "choose with "
         scrcode "joystick"
-trigger_instructions:
-        invscrcode "push "
-        scrcode "trigger"
-        invscrcode " to play"
 pushselect:
         invscrcode "push "
         scrcode "select"
         invscrcode " for menu"
+trigger_instructions:
+        invscrcode "push "
+        scrcode "trigger"
+        invscrcode " to play"
 
         .byte $c0,$c0,$c0,$c0,$e5,$e1,$f3,$f9,$c0,$e4,$ef,$e5,$f3,$c0,$e9,$f4,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$f2,$ef,$e2,$ef,$f4,$f3,$c0,$e9,$c0,$c0,$c0,$c0,$c0,$c0 ; $28 data bytes
 
