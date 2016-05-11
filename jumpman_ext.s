@@ -77,6 +77,7 @@ start:  .byte $20,$10,$15,$13,$08,$a0,$93,$94,$81,$92,$94,$a0,$14,$0f,$20,$10,$0
         nop
         nop
         nop
+        jmp r5300
 
 
 ; replace the game options display list 
@@ -101,6 +102,13 @@ patches: ; list of patch addresses, 3 bytes per entry low, high, replacement
         ; debugging! only one extra life
         .word $4d01
         .byte 1
+
+        .word $5300
+        .byte $4c
+        .word $5301
+        .byte <r5300
+        .word $5302
+        .byte >r5300
 
         .word $ffff
 
@@ -358,6 +366,16 @@ nextlvl: ; hook into code at $5200
         pla
         ; FIXME: need to figure out what to call to reset colors and players
         jmp practice
+
+; hook into final score to intercept end of game check
+r5300:
+        jsr $3780
+        lda $2603
+        cmp #6
+        beq @cont
+        jmp $5303       ; continue with old level check routine
+@cont:  jmp practice
+
 
 r4400: ; replacement for 4400 to skip loading if $#ff passed in high sector
         lda $30ef
