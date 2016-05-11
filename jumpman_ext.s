@@ -98,6 +98,10 @@ patches: ; list of patch addresses, 3 bytes per entry low, high, replacement
         .word $242f
         .byte >opt_dl
 
+        ; debugging! only one extra life
+        .word $4d01
+        .byte 1
+
         .word $ffff
 
 patch:  ldx #0
