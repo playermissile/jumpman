@@ -9,6 +9,7 @@
 
         .macpack atari
 
+atract = $4d
 vbreak = $206
 sdlstl = $230
 gprior = $26f
@@ -62,7 +63,9 @@ jumptable:
 
 start:  .byte $20,$10,$15,$13,$08,$a0,$93,$94,$81,$92,$94,$a0,$14,$0f,$20,$10,$0c,$01,$19,$a0 ; $14 data bytes moved copy of "press start to play"
 
-        jmp xexinit
+        ;jmp xexinit
+        nop
+        nop
         jmp r4400
         jmp r503c
 
@@ -133,21 +136,6 @@ stage2: ; entry point after normal ATR boot
         jsr patch
         jmp $2900       ; jump back to original post-boot start addr
 
-xexinit: ; entry point for XEX boot
-        jsr patch
-        jsr $3780       ; clear memory
-        jsr $3820       ; set up character set
-        lda #$ff        ; flag to load test level instead of accessing disk
-        sta $30ef
-        sta fastload
-        lda #<youbigdummy
-        sta vbreak
-        lda #>youbigdummy
-        sta vbreak + 1
-        jmp practice2
-
-        ;jmp $55c0       ; jump to entry point right after loading sectors
-
 fixupdl: ; modify the game options code to point to our (larger) game options display list
         lda #<opt_dl
         sta $242a
@@ -167,11 +155,93 @@ loadlvl: ; hook into code at 24dd
         sta $30ef
         rts
 
+practice_level:
+        .byte 0
+
 practice: ; new code to load in practice level sector
-        lda #$61
+        lda #<practicedl
+        sta sdlstl
+        lda #>practicedl
+        sta sdlstl + 1
+        lda #0
+        sta atract
+        ; note! Select is automatically coded to go back to game options screen!
+
+tone:
+        lda #$13
+        sta $3040
+        lda #$26
+        sta $3041
+        lda #$10
+        jsr $32b0
+@1:     lda $3030
+        ora $3032
+        cmp #$00
+        bne @1          ; wait for tone to get done playing
+
+        lda #$30
+        jsr $56b6
+
+stick:
+        lda $3020
+        jsr hex2text
+        sta levelnums
+        stx levelnums + 1
+        lda $3024
+        jsr hex2text
+        sta levelnums +20
+        stx levelnums +20 + 1
+        lda $302c
+        jsr hex2text
+        sta levelnums + 40
+        stx levelnums + 40 + 1
+
+        lda $3020
+        cmp #0
+        beq leftright
+
+        jmp tone
+
+leftright:
+        lda $3024
+        cmp #0
+        beq button
+
+        jmp tone
+
+button:
+        lda $302c
+        cmp #1
+        beq stick
+
+        lda #26
+        sta practice_level
+
+        lda practice_level
+        sta $82
+        lda #0
+        sta $83
+
+        asl $82       ; multiply by 16
+        rol $83
+        asl $82
+        rol $83
+        asl $82
+        rol $83
+        asl $82
+        rol $83
+        clc
+        lda #$11
+        adc $82
         sta $30ee
-        lda #$0
+        lda #$00
+        adc $83
         sta $30ef
+
+;        lda #$61
+;        sta $30ee
+;        lda #$0
+;        sta $30ef
 
         ; replace code at 24ec to avoid chosing the number of players. Force this to be one player by doing everything that $0a00 does except waiting for the user to press a key
         pla
@@ -191,6 +261,49 @@ practice2:
         jsr $0fd5       ; init gameplay VBI routines?
         lda #0          ; force one player
         jmp $0a12       ; skip over the display list portion of $0a00
+
+practicedl:
+        .byte $70,$70,$70 ; 3x 8 BLANK
+        .byte $47,<practicescreen,>practicescreen
+        .byte $70,7,7,7,7,7,7,7,7,$70
+;       .byte $70,6,6,6,6,6,6,6,6,$70
+        .byte 7,7
+        .byte $41,<practicedl,>practicedl
+
+practicescreen:
+        invscrcode "! PRACTICE A LEVEL '"
+levelnums:
+        scrcode "  1    9   17   25A "
+        scrcode "  2   10   18   25B "
+        scrcode "  3   11   19   25C "
+        scrcode "  4   12   20   26  "
+        scrcode "  5   13   21   27  "
+        scrcode "  6   14   22   28  "
+        scrcode "  7   15   23   29  "
+        scrcode "  8   16   24   30  "
+line1:
+        invscrcode "choose with "
+        scrcode "joystick"
+line2:
+        ;scrcode "                    "
+        ;.byte $c0,$c0,$c0,$c0,$e5,$e1,$f3,$f9,$c0,$e4,$ef,$e5,$f3,$c0,$e9,$f4,$c0,$c0,$c0,$c0
+        invscrcode "push "
+        scrcode "select"
+        invscrcode " for menu"
+joy_instructions:
+        invscrcode "choose with "
+        scrcode "joystick"
+trigger_instructions:
+        invscrcode "push "
+        scrcode "trigger"
+        invscrcode " to play"
+pushselect:
+        invscrcode "push "
+        scrcode "select"
+        invscrcode " for menu"
+
+        .byte $c0,$c0,$c0,$c0,$e5,$e1,$f3,$f9,$c0,$e4,$ef,$e5,$f3,$c0,$e9,$f4,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$f2,$ef,$e2,$ef,$f4,$f3,$c0,$e9,$c0,$c0,$c0,$c0,$c0,$c0 ; $28 data bytes
+
 
 ; hook into level completion check. If game option 6, don't play any more levels, jump right back to the game options screen
 nextlvl: ; hook into code at $5200
@@ -294,111 +407,6 @@ copypg: sta @1 + 2
         bne @1
         rts
 
-; Harvest table crash page. Intercept the BRK operator that occurs
-; when there's a harvest table miss and display the relevant info.
-; We are in an interrupt handler here, so need to end with RTI
-youbigdummy:
-        lda $bc         ; checksum value
-        jsr hex2text
-        sta scrchecksum
-        stx scrchecksum + 1
-        lda $2846
-        jsr hex2text
-        sta scroffsetx
-        stx scroffsetx + 1
-        lda $2847
-        jsr hex2text
-        sta scroffsety
-        stx scroffsety + 1
-        lda $306a
-        jsr hex2text
-        sta scrjumpmanx
-        stx scrjumpmanx + 1
-        lda $306f
-        jsr hex2text
-        sta scrjumpmany
-        stx scrjumpmany + 1
-
-        lda $bb
-        jsr hex2text
-        sta scrpeanutaddr
-        stx scrpeanutaddr + 1
-        lda $ba
-        jsr hex2text
-        sta scrpeanutaddr + 2
-        stx scrpeanutaddr + 3
-        lda #<scrpeanuts
-        sta $82
-        lda #>scrpeanuts
-        sta $83
-        ldy #0
-        sty $84
-        sty $85
-ploop:
-        ldy $85
-        lda ($ba),y
-        cmp #$ff
-        beq showdl
-        sty $85
-        jsr hex2text
-        ldy $84
-        sta ($82),y
-        iny
-        txa
-        sta ($82),y
-        iny
-        iny
-        iny
-        sty $84
-        clc
-        lda $85
-        adc #7
-        sta $85
-        bcc ploop       ; don't go into endless loop if missing FF
-
-
-showdl:
-        lda #<dummydl
-        sta sdlstl
-        sta dlistl
-        lda #>dummydl
-        sta dlisth
-        sta sdlstl + 1
-        lda #$40
-        sta nmien
-        lda #0
-        sta audctl
-        sta audc1
-        sta audc2
-        sta audc3
-        sta audc4
-        lda #$14
-        sta gprior
-        sta prior
-        ldx #$e4
-        ldy #$62
-        lda #$07
-        jsr setvbv
-
-        pla             ; mess with stack to return to our wait loop
-        sta $80         ; there are two vars on the stack, then the return
-        pla             ; address.
-        pla
-        lda #>wait
-        pha
-        lda #<wait
-        pha
-        lda $80
-        pha
-        rti
-        nop
-        nop
-        nop
-wait:   nop
-        nop
-        nop
-@1:     jmp @1
-
 ; convert hex value in A to two characters, high nibble returned
 ; in A, low nibble in X
 hex2text:
@@ -419,89 +427,3 @@ hex2text:
         adc #6
 @2:     adc #16
         rts
-
-
-
-dummydl:
-        .byte $70,$70,$70,$70,$70 ; 3x 8 BLANK
-        .byte $47,<dummyscreen,>dummyscreen ; LMS MODE 6
-        .byte $70,$06,$06,$06,$06,$06,$70
-        .byte 7,6,6,6,6,6,6,6
-        .byte $41,<dummydl,>dummydl
-
-dummyscreen:
-        scrcode "PEANUT HARVEST ERROR"
-        scrcode "00BC CHECKSUM: "
-scrchecksum:
-        scrcode "FF   "
-        scrcode "284E OFFSET X: "
-scroffsetx:
-        scrcode "FF   "
-        scrcode "284F OFFSET Y: "
-scroffsety:
-        scrcode "FF   "
-        scrcode "306A JUMPMAN X: "
-scrjumpmanx:
-        scrcode "FF  "
-        scrcode "306F JUMPMAN Y: "
-scrjumpmany:
-        scrcode "FF  "
-        scrcode "HARVEST TABLE: "
-scrpeanutaddr:
-        scrcode "XXXX "
-scrpeanuts:
-        scrcode "                    "
-        scrcode "                    "
-        scrcode "                    "
-        scrcode "                    "
-        scrcode "                    "
-        scrcode "                    "
-        scrcode "                    "
-
-
-; copy of code from 2476: game options screen
-gopt:
-        lda #$04
-        sta $4108       ; option is allowed
-        lda $2603       ; game option number
-        clc
-        adc #$01
-        cmp #$07        ;Number of items in the game options list
-        bne @1
-        lda #$01
-@1:     sta $2603
-        sta $32fe
-        ldx #$14     ;copies "push start to play" after option is first pressed
-@2:     lda start,x  ;new location, was 25c1
-        sec
-        sbc #$20
-        sta $70b3,x  ;destination on screen for "push start to play"
-        dex
-        bne @2
-        lda #$13
-        sta $3040
-        lda #$26
-        sta $3041
-        lda #$10
-        jsr $32b0       ; what does this subroutine do? 
-@wait1: lda $3030
-        ora $3032
-        cmp #$00
-        bne @wait1
-        lda #$c9
-        sta $4100
-        lda #$24
-        sta $4101
-        lda #$00
-        sta $4106
-        sta $4108
-        jmp $2473
-        lda #$01
-        sta $4106
-        lda #$04
-        sta $4108
-        lda #$00
-        sta $4107
-        lda #$40
-        sta $d40e
-        jsr $8023    ;new call to $8023: load start sector for chosen game option
