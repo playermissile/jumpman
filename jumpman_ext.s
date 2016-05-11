@@ -241,12 +241,12 @@ button:
         cmp #1
         beq updown
 
-        lda practice_level
+        lda practice_level ; ranges from 1 to 32
         sta $82
         lda #0
         sta $83
 
-        asl $82       ; multiply by 16
+        asl $82         ; multiply by 16
         rol $83
         asl $82
         rol $83
@@ -254,18 +254,13 @@ button:
         rol $83
         asl $82
         rol $83
-        clc
-        lda #$11
-        adc $82
+        inc $82         ; add 1 to get sectors 17, 33, ... 512
+        bne @1
+        inc $83
+@1:     lda $82
         sta $30ee
-        lda #$00
-        adc $83
+        lda $83
         sta $30ef
-
-;        lda #$61
-;        sta $30ee
-;        lda #$0
-;        sta $30ef
 
         ; replace code at 24ec to avoid chosing the number of players. Force this to be one player by doing everything that $0a00 does except waiting for the user to press a key
         pla
