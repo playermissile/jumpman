@@ -15,7 +15,7 @@ MEMORY
     RAM:        start = $0280, size = $8C80, file = %O;
     DHEADER:    start = $0000, size = $0006, file = %O;
     RAM1:       start = $6300, size = $23, file = %O;
-    RAM2:       start = $6323, size = $2000, file = %O;
+    RAM2:       start = $6323, size = $4dd, file = %O;
     TRAILER:    start = $0000, size = $0006, file = %O; 
 }
 
