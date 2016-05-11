@@ -74,7 +74,9 @@ start:  .byte $20,$10,$15,$13,$08,$a0,$93,$94,$81,$92,$94,$a0,$14,$0f,$20,$10,$0
         nop
         nop
         jmp r4400
-        jmp r503c
+        nop
+        nop
+        nop
 
 
 ; replace the game options display list 
@@ -95,28 +97,6 @@ patches: ; list of patch addresses, 3 bytes per entry low, high, replacement
         .byte <opt_dl
         .word $242f
         .byte >opt_dl
-
-        ; replace level scrolling routine
-        .word $503c
-        .byte $4c
-        .word $503d
-        .byte <r503c
-        .word $503e
-        .byte >r503c
-
-        ; replace level scrolling routine
-        .word $500a
-        .byte $4c
-        .word $500b
-        .byte <r500a
-        .word $500c
-        .byte >r500a
-
-        ; short-circuit call to level scrolling routine
-;        .word $5591
-;        .byte <r5590
-;        .word $5592
-;        .byte >r5590
 
         .word $ffff
 
@@ -155,7 +135,7 @@ fixupdl: ; modify the game options code to point to our (larger) game options di
 loadlvl: ; hook into code at 24dd
         ldy $2603
         cpy #6
-        beq practice
+        beq practice_init
         lda $2507,y
         sta $30ee
         lda $250d,y
@@ -165,7 +145,10 @@ loadlvl: ; hook into code at 24dd
 practice_level:
         .byte 0
 
-practice: ; new code to load in practice level sector
+practice_init: ; new code to load in practice level sector
+        lda #0
+        sta practice_level
+practice:
         lda #<practicedl
         sta sdlstl
         lda #>practicedl
@@ -173,8 +156,6 @@ practice: ; new code to load in practice level sector
         lda #0
         sta atract
         ; note! Select is automatically coded to go back to game options screen!
-        lda #0
-        sta practice_level
         jsr show_instructions
 
 tone:
@@ -360,10 +341,15 @@ trigger_instructions:
         scrcode "trigger"
         invscrcode " to play"
 
-        .byte $c0,$c0,$c0,$c0,$e5,$e1,$f3,$f9,$c0,$e4,$ef,$e5,$f3,$c0,$e9,$f4,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$c0,$f2,$ef,$e2,$ef,$f4,$f3,$c0,$e9,$c0,$c0,$c0,$c0,$c0,$c0 ; $28 data bytes
+scr_level_loc:
+        .byte $ff
+        .byte 0,20,40,60,80,100,120,140
+        .byte 5,25,45,65,85,105,125,145
+        .byte 10,30,50,70,90,110,130,150
+        .byte 15,35,55,75,95,115,135,155
 
 
-; hook into level completion check. If game option 6, don't play any more levels, jump right back to the game options screen
+; hook into successful level completion check. If game option 6, don't play any more levels, jump right back to the practice screen
 nextlvl: ; hook into code at $5200
         lda $2603
         cmp #6
@@ -371,12 +357,8 @@ nextlvl: ; hook into code at $5200
         rts             ; continue with old level check routine
 @cont:  pla             ; pop return address off stack
         pla
-        lda #1          ; fake out being beginner level
-        sta $2603
-        lda #$ff
-        sta $30f0
-        jmp $23eb       ; jump to game options entry point
-
+        ; FIXME: need to figure out what to call to reset colors and players
+        jmp practice
 
 r4400: ; replacement for 4400 to skip loading if $#ff passed in high sector
         lda $30ef
@@ -387,66 +369,6 @@ r4400: ; replacement for 4400 to skip loading if $#ff passed in high sector
 @1:     lda #$88        ; copy working level to $2800
         ldy #$28
         ldx #$8
-        jsr copypg
-        rts
-
-fastload: .byte $0
-
-r503c: ; replacement for slow scroll to copy screen
-        lda fastload
-        cmp #$ff
-        beq @1
-        lda $50d6
-        jmp $503f
-@1:     lda #0
-        sta $e0
-        jsr copyscr
-        jmp $5049
-
-r500a:  jsr $331c
-        lda fastload
-        cmp #$ff
-        beq @1
-        jmp $500d
-@1:     jsr $56af
-        ldx #$50
-        ldy #$cb
-        lda #$07
-        jsr $e45c    ; SETVBV
-
-        jsr $56af
-
-        lda #$c0
-        sta $d40e    ; NMIEN
-        lda #0
-        sta $e0
-        jsr copyscr
-;        lda #$40
-;        sta $d40e    ; NMIEN
-
-        jsr $56af
-
-        lda #$4d ; fixes the flashy problems by removing the DLI on the first line
-        sta $3c03
-        lda #$5b ; fix this pointer showing the DLIs have been pushed all the way to the bottom
-        sta $f0
-        jmp $502b ; need to exit through here, otherwise bombs can't be picked up
-
-; looks like there is an extra DLI bit that can be set on the main playfield
-; display list. Routine 4ca0 sets this extra bit, but it's not used in normal
-; play
-
-
-
-; currently, this results in an empty playfield! Still flashy!
-r5590:  jsr $3800
-        jsr $331c
-        jsr copyscr
-        rts
-
-copyscr: lda #$10
-        ldy #$70
-        ldx #$0f
         jsr copypg
         rts
 
