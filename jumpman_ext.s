@@ -29,6 +29,9 @@ setvbv = $e45c
 joy_vert = $3020
 joy_horz = $3024
 joy_btn = $302c
+screen = $7000
+line1 = screen + 160
+line2 = screen + 180
 
 
        .segment "JMHACK1"
@@ -168,6 +171,7 @@ practice_init: ; new code to load in practice level sector
         lda #0
         sta practice_level
 practice:
+        jsr $3800       ; clear $7000 playfield screen
         lda #<practicedl
         sta sdlstl
         lda #>practicedl
@@ -296,16 +300,34 @@ practice2:
         lda #0          ; force one player
         jmp $0a12       ; skip over the display list portion of $0a00
 
-show_instructions: ; check to see if this the first time
-        lda practice_level
+show_instructions: ; start with a fresh copy of the level numbers each time
+        ldy #160
+@1:     lda levelnums - 1, y
+        sta $7000 - 1,y
+        dey
+        bne @1
+
+        lda practice_level ; check to see if this the first time
         beq basic_instructions
+
+        tax             ; highlight chosen level number
+        lda scr_level_loc, x
+        tax
+        ldy #5
+@3:     lda $7000, x
+        ora #%11000000
+        sta $7000, x
+        inx
+        dey
+        bne @3
+
         ldy #20
-@1:     lda trigger_instructions - 1,y
+@2:     lda trigger_instructions - 1,y
         sta line1 - 1,y
         lda #0
         sta line2 - 1,y
         dey
-        bne @1
+        bne @2
         lda practice_level
         jsr hex2text
         sta line2
@@ -323,8 +345,9 @@ basic_instructions:
 practicedl:
         .byte $70,$70,$70 ; 3x 8 BLANK
         .byte $47,<practicescreen,>practicescreen
-        .byte $70,7,7,7,7,7,7,7,7,$70
-;       .byte $70,6,6,6,6,6,6,6,6,$70
+        .byte $70
+        .byte $47,$00,$70
+        .byte 7,7,7,7,7,7,7,$70
         .byte 7,7
         .byte $41,<practicedl,>practicedl
 
@@ -339,10 +362,6 @@ levelnums:
         scrcode "  6   14   22   28  "
         scrcode "  7   15   23   29  "
         scrcode "  8   16   24   30  "
-line1:
-        scrcode "                    "
-line2:
-        scrcode "                    "
 joy_instructions:
         invscrcode "choose with "
         scrcode "joystick"
