@@ -176,6 +176,11 @@ practice:
         sta sdlstl
         lda #>practicedl
         sta sdlstl + 1
+        lda #<levelnum_dli
+        sta $30e2
+        lda #>levelnum_dli
+        sta $30e3
+
         lda #0
         sta atract
         ; note! Select is automatically coded to go back to game options screen!
@@ -281,6 +286,13 @@ button:
         lda $83
         sta $30ef
 
+        lda #$e4        ; point to no-op DLI before starting level
+        sta $30e2
+        lda #$30
+        sta $30e3
+        lda #$40
+        sta nmien
+
         ; replace code at 24ec to avoid chosing the number of players. Force this to be one player by doing everything that $0a00 does except waiting for the user to press a key
         pla
         pla
@@ -315,7 +327,7 @@ show_instructions: ; start with a fresh copy of the level numbers each time
         tax
         ldy #5
 @3:     lda $7000, x
-        ora #%11000000
+        ora #%10000000
         sta $7000, x
         inx
         dey
@@ -328,10 +340,6 @@ show_instructions: ; start with a fresh copy of the level numbers each time
         sta line2 - 1,y
         dey
         bne @2
-        lda practice_level
-        jsr hex2text
-        sta line2
-        stx line2 + 1
         rts
 basic_instructions:
         ldy #40
@@ -341,10 +349,18 @@ basic_instructions:
         bne @1
         rts
 
+levelnum_dli:
+        pha
+        lda $30b8
+        sta $d40a
+        sta $d018
+        pla
+        rti
+        nop
 
 practicedl:
         .byte $70,$70,$70 ; 3x 8 BLANK
-        .byte $47,<practicescreen,>practicescreen
+        .byte $c7,<practicescreen,>practicescreen
         .byte $70
         .byte $47,$00,$70
         .byte 7,7,7,7,7,7,7,$70
@@ -428,25 +444,4 @@ copypg: sta @1 + 2
         inc @2 + 2
         dex
         bne @1
-        rts
-
-; convert hex value in A to two characters, high nibble returned
-; in A, low nibble in X
-hex2text:
-        tay     ; save temporarily
-        and #$0f
-        cmp #$a
-        bcc @1
-        adc #6  ; oooh! Save a byte! Operation we want is +7, but carry is guaranteed to be set
-@1:     adc #16
-        tax
-        tya
-        lsr a
-        lsr a
-        lsr a
-        lsr a
-        cmp #$a
-        bcc @2
-        adc #6
-@2:     adc #16
         rts
