@@ -36,14 +36,10 @@ joy_btn = $302c
 
 ; bootstrap code called from the end of the boot sector loader, set at the
 ; vector 09d6 in the boot code.
-boot2:  LDA #$80     ;copy 5 pages from $6300 to $8000
-        STA dest + 2
-        LDA #$63
-        sta loop + 2
-        LDX #$05
+boot2:  LDX #$05
         LDY #$00
-loop:   LDA $ff00,y
-dest:   STA $ff00,y
+loop:   LDA $6300,y
+dest:   STA $8000,y
         INY
         BNE loop
         INC dest + 2
@@ -51,6 +47,17 @@ dest:   STA $ff00,y
         DEX
         BNE loop
         JMP stage2
+        ; now we need 10 extra bytes to keep rest of the code in the same spot
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
+        nop
 
 
 ; All this code resides at $6300 - $67ff on disk and is copied to $8000
