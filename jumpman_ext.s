@@ -90,26 +90,9 @@ start:  .byte $20,$10,$15,$13,$08,$a0,$93,$94,$81,$92,$94,$a0,$14,$0f,$20,$10,$0
         jmp r5300
 
 
-; replace the game options display list 
-opt_dl: .byte $70,$70,$70 ; 3x 8 BLANK game options display list
-        .byte $70,$70
-        .byte $c7,$14,$70 ; LMS 7000 MODE 7
-        .byte $70,$70
-        .byte $87,$87,$87,$87,$87
-        .byte $07       ; MODE 7
-        .byte $70,$70   ; **NEW!!** extra blank space because of new option
-        .byte $47,$b4,$70 ; LMS, point to where start/select line should be
-        .byte $41
-        .word opt_dl ; JVB back to start of display list
-
 patches: ; list of patch addresses, 3 bytes per entry low, high, replacement
 
         ; modify the game options code to point to our (larger) game options display list
-        .word $242a
-        .byte <opt_dl
-        .word $242f
-        .byte >opt_dl
-
         ; debugging! only one extra life
         .word $4d01
         .byte 1
@@ -142,16 +125,8 @@ patch:  ldx #0
 
 
 stage2: ; entry point after normal ATR boot
-        ;jsr fixupdl
         jsr patch
         jmp $2900       ; jump back to original post-boot start addr
-
-fixupdl: ; modify the game options code to point to our (larger) game options display list
-        lda #<opt_dl
-        sta $242a
-        lda #>opt_dl
-        sta $242f
-        rts
 
 
 ; choose sector start for practice level
