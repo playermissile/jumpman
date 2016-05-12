@@ -93,11 +93,13 @@ start:  .byte $20,$10,$15,$13,$08,$a0,$93,$94,$81,$92,$94,$a0,$14,$0f,$20,$10,$0
 ; replace the game options display list 
 opt_dl: .byte $70,$70,$70 ; 3x 8 BLANK game options display list
         .byte $47,$00,$70 ; LMS 7000 MODE 7
-        .byte $07    ; MODE 7
-        .byte $87,$87,$87,$87,$87,$87 ; 6x DLI MODE 7
+        .byte $07         ; MODE 7, "game options" title area at $7014
+        .byte $c7,$00,$70 ; LMS + DLI, point to blank area
+        .byte $c7,$28,$70 ; LMS + DLI, point to first line of menu
+        .byte $87,$87,$87,$87
         .byte $07       ; MODE 7
         .byte $70,$70   ; **NEW!!** extra blank space because of new option
-        .byte $07       ; MODE 7
+        .byte $47,$b4,$70 ; LMS, point to where start/select line should be
         .byte $41
         .word opt_dl ; JVB back to start of display list
 
