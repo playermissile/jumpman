@@ -346,7 +346,7 @@ nextlvl: ; hook into code at $5200
         rts             ; continue with old level check routine
 @cont:  pla             ; pop return address off stack
         pla
-        ; FIXME: need to figure out what to call to reset colors and players
+        jsr $2513       ; reset colors
         jmp practice
 
 ; hook into final score to intercept end of game check
@@ -356,7 +356,8 @@ r5300:
         cmp #6
         beq @cont
         jmp $5303       ; continue with old level check routine
-@cont:  jmp practice
+@cont:  jsr $2513       ; reset colors
+        jmp practice
 
 levelnames:
         .byte $04,$e5,$e1,$f3,$f9,$c0,$e4,$ef,$e5,$f3,$c0,$e9,$f4
