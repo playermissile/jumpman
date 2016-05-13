@@ -249,7 +249,38 @@ show_instructions: ; start with a fresh copy of the level numbers each time
         sta line2 - 1,y
         dey
         bne @2
-        rts
+
+        lda #<levelnames
+        sta $82
+        lda #>levelnames
+        sta $83
+        ldx practice_level
+
+        ldy #0
+        lda ($82),y     ; load first indent byte
+@checkindent:
+        dex
+        beq @printname
+
+@skipname: ; not the level number, so skip everything until next indent byte
+        inc $82
+        bne @4
+        inc $83
+@4:     lda ($82), y
+        bmi @skipname
+        bpl @checkindent
+
+@printname:
+        tax             ; indent byte used as offset to line2
+@printloop:
+        iny
+        lda ($82), y
+        bpl @exit
+        sta line2, x
+        inx
+        bne @printloop
+@exit:  rts
+
 basic_instructions:
         ldy #40
 @1:     lda joy_instructions - 1,y
@@ -326,3 +357,37 @@ r5300:
         beq @cont
         jmp $5303       ; continue with old level check routine
 @cont:  jmp practice
+
+levelnames:
+        .byte $04,$e5,$e1,$f3,$f9,$c0,$e4,$ef,$e5,$f3,$c0,$e9,$f4
+        .byte $06,$f2,$ef,$e2,$ef,$f4,$f3,$c0,$e9
+        .byte $05,$e2,$ef,$ed,$e2,$f3,$c0,$e1,$f7,$e1,$f9
+        .byte $03,$ea,$f5,$ed,$f0,$e9,$ee,$e7,$c0,$e2,$ec,$ef,$e3,$eb,$f3
+        .byte $06,$f6,$e1,$ed,$f0,$e9,$f2,$e5,$c0
+        .byte $06,$e9,$ee,$f6,$e1,$f3,$e9,$ef,$ee
+        .byte $03,$e7,$f2,$e1,$ee,$e4,$c0,$f0,$f5,$fa,$fa,$ec,$e5,$c0,$e9
+        .byte $06,$e2,$f5,$e9,$ec,$e4,$e5,$f2,$c0
+        .byte $03,$ec,$ef,$ef,$eb,$c0,$ef,$f5,$f4,$c0,$e2,$e5,$ec,$ef,$f7
+        .byte $06,$e8,$ef,$f4,$c0,$e6,$ef,$ef,$f4
+        .byte $06,$f2,$f5,$ee,$e1,$f7,$e1,$f9,$c0
+        .byte $05,$f2,$ef,$e2,$ef,$f4,$f3,$c0,$e9,$e9,$c0
+        .byte $05,$e8,$e1,$e9,$ec,$f3,$f4,$ef,$ee,$e5,$f3
+        .byte $03,$e4,$f2,$e1,$e7,$ef,$ee,$c0,$f3,$ec,$e1,$f9,$e5,$f2,$c0
+        .byte $02,$e7,$f2,$e1,$ee,$e4,$c0,$f0,$f5,$fa,$fa,$ec,$e5,$c0,$e9,$e9,$c0
+        .byte $04,$f2,$e9,$e4,$e5,$c0,$e1,$f2,$ef,$f5,$ee,$e4,$c0
+        .byte $05,$f4,$e8,$e5,$c0,$f2,$ef,$ef,$f3,$f4,$c0
+        .byte $04,$f2,$ef,$ec,$ec,$c0,$ed,$e5,$c0,$ef,$f6,$e5,$f2
+        .byte $02,$ec,$e1,$e4,$e4,$e5,$f2,$c0,$e3,$e8,$e1,$ec,$ec,$e5,$ee,$e7,$e5
+        .byte $06,$e6,$e9,$e7,$f5,$f2,$e9,$f4,$c0
+        .byte $05,$ea,$f5,$ed,$f0,$cd,$ee,$cd,$f2,$f5,$ee
+        .byte $07,$e6,$f2,$e5,$e5,$fa,$e5
+        .byte $01,$e6,$ef,$ec,$ec,$ef,$f7,$c0,$f4,$e8,$e5,$c0,$ec,$e5,$e1,$e4,$e5,$f2,$c0
+        .byte $05,$f4,$e8,$e5,$c0,$ea,$f5,$ee,$e7,$ec,$e5
+        .byte $04,$ed,$f9,$f3,$f4,$e5,$f2,$f9,$c0,$ed,$e1,$fa,$e5
+        .byte $04,$ed,$f9,$f3,$f4,$e5,$f2,$f9,$c0,$ed,$e1,$fa,$e5
+        .byte $04,$ed,$f9,$f3,$f4,$e5,$f2,$f9,$c0,$ed,$e1,$fa,$e5
+        .byte $05,$e7,$f5,$ee,$e6,$e9,$e7,$e8,$f4,$e5,$f2
+        .byte $05,$f2,$ef,$e2,$ef,$f4,$f3,$c0,$e9,$e9,$e9
+        .byte $01,$ee,$ef,$f7,$c0,$f9,$ef,$f5,$c0,$f3,$e5,$e5,$c0,$e9,$f4,$ce,$ce,$ce,$ce
+        .byte $04,$e7,$ef,$e9,$ee,$e7,$c0,$e4,$ef,$f7,$ee,$df,$c0
+        .byte $02,$e7,$f2,$e1,$ee,$e4,$c0,$f0,$f5,$fa,$fa,$ec,$e5,$c0,$e9,$e9,$e9
