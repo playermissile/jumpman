@@ -25,8 +25,9 @@ levelbuilder.atr: bootloader.obj levelbuilder_ext.obj levelbuilder2.xex
 	python xex2atr.py -o levelbuilder.atr -b bootloader.obj levelbuilder2.xex
 	python insert-bin.py -o levelbuilder.atr levelbuilder.atr levelbuilder_ext.obj 22438
 
-practice.atr: jumpman_ext.obj jt1.atr
-	python insert-bin.py -o practice.atr jt1.atr jumpman_ext.obj 88720
+practice.atr: jumpman_ext.obj Jumpman\ \(1983\)\(Epyx\)\(US\)\[\!\].atr jumpman_ext.patch jumpman_ext.lst
+	python insert-bin.py -o practice.atr Jumpman\ \(1983\)\(Epyx\)\(US\)\[\!\].atr jumpman_ext.obj 88720
+	python patch-bin.py -o practice.atr practice.atr jumpman_ext.patch jumpman_ext.lst
 
 clean :
 	$(RM) *.o *~ *.map *.lst jumpman_ext.xex

@@ -49,85 +49,18 @@ dest:   STA $8000,y
         INC loop + 2
         DEX
         BNE loop
-        JMP stage2
-        ; now we need 10 extra bytes to keep rest of the code in the same spot
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-
+        JMP $2900       ; back to original start point after boot
+boot2end:
 
 ; All this code resides at $6300 - $67ff on disk and is copied to $8000
 ; by the boot2 code above. After this point, we need the origin to appear
-; as if everything was assembled at $8000. boot2 uses $23 bytes of code
-; so the new origin is $8023. If the size of boot2 changes, adjust this
-; origin and the offset in the ca65 link file!
+; as if everything was assembled at $8000. boot2 will also get copied so
+; adjust the origin to after that number of bytes. The .lnk file alse needs
+; to get adjusted with the correct number of bytes, but I don't know how
+; to do that other than by hand. So if boot2 changes, update that file.
 
         .segment "JMHACK2"
-        .org $8023      ; $23 bytes in boot2 code
-
-; reserve space for vector table so I don't have to keep changing addresses
-; in the Jumpman atr
-jumptable:
-        jmp loadlvl
-        jmp nextlvl
-
-start:  .byte $20,$10,$15,$13,$08,$a0,$93,$94,$81,$92,$94,$a0,$14,$0f,$20,$10,$0c,$01,$19,$a0 ; $14 data bytes moved copy of "press start to play"
-
-        ;jmp xexinit
-        nop
-        nop
-        jmp r4400
-        nop
-        nop
-        nop
-        jmp r5300
-
-
-patches: ; list of patch addresses, 3 bytes per entry low, high, replacement
-
-        ; modify the game options code to point to our (larger) game options display list
-        ; debugging! only one extra life
-        .word $4d01
-        .byte 1
-
-        .word $5300
-        .byte $4c
-        .word $5301
-        .byte <r5300
-        .word $5302
-        .byte >r5300
-
-        .word $ffff
-
-patch:  ldx #0
-        ldy #0
-@2:     lda patches,x
-        sta $82
-        inx
-        lda patches,x
-        sta $83
-        inx
-        and $82
-        cmp #$ff
-        bne @1
-        rts
-@1:     lda patches,x
-        inx
-        sta ($82),y
-        jmp @2
-
-
-stage2: ; entry point after normal ATR boot
-        jsr patch
-        jmp $2900       ; jump back to original post-boot start addr
-
+        .org $8000 + boot2end - boot2   ; calculate offset into $8000
 
 ; choose sector start for practice level
 loadlvl: ; hook into code at 24dd
@@ -393,31 +326,3 @@ r5300:
         beq @cont
         jmp $5303       ; continue with old level check routine
 @cont:  jmp practice
-
-
-r4400: ; replacement for 4400 to skip loading if $#ff passed in high sector
-        lda $30ef
-        cmp #$ff
-        beq @1
-        jsr $443c
-        jmp $4403
-@1:     lda #$88        ; copy working level to $2800
-        ldy #$28
-        ldx #$8
-        jsr copypg
-        rts
-
-
-; copy pages. Source page in A, dest page in Y, num pages in X
-copypg: sta @1 + 2
-        sty @2 + 2
-        ldy #$00
-@1:     lda $ff00,y
-@2:     sta $ff00,y
-        iny
-        bne @1
-        inc @1 + 2
-        inc @2 + 2
-        dex
-        bne @1
-        rts

@@ -1,0 +1,69 @@
+; these offsets are from the beginning of the disk image
+
+        ; check for 40k RAM
+        .org $00e4
+        .byte $a0
+
+        ; text representation of required RAM: chars "40"
+        .org $022a
+        .byte $34,$30
+
+        ; jump location after successful boot
+        .org $0266
+        .word boot2
+
+        ; Number of items in the game options list
+        .org $11c12
+        .byte $07
+
+        ; new call to $8023: load start sector for chosen game option
+        .org $11c6d
+        .byte $20
+        .word loadlvl
+        .byte $4c,$ec,$24
+
+        ; 2nd half of game options display list
+        .byte $07,$70,$70,$47,$b4,$70,$41,$24,$25
+
+        ; differences to first half of game options display list
+        .org $11cb7
+        .byte $70,$70,$c7,$14,$70,$70,$70
+
+        .org $11cc0
+        .byte $87,$87,$87,$01,$e3,$24
+
+        ; Restructured game options menu to remove blank line
+        .org $11ce0
+        .byte $42,$45,$47,$49,$4e,$4e,$45,$52
+
+        .org $11cf2
+        .byte $49,$4e,$54
+
+        .org $11cf6
+        .byte $52,$4d,$45,$44,$49,$41,$54,$45
+
+        .org $11d06
+        .byte $20,$20,$41,$44,$56,$41,$4e,$43,$45,$44,$20,$20
+
+        .org $11d1b
+        .byte $47,$52,$41,$4e,$44,$20,$4c,$4f,$4f,$50
+
+        .org $11d2f
+        .byte $52,$41,$4e,$44,$4f,$4d,$49,$5a,$45,$52
+
+        .org $11d40
+        .byte $50,$52,$41,$43,$54,$49,$43,$45,$20,$41,$20,$4c,$45,$56,$45,$4c
+
+        ; Number of options in game options list
+        .org $11d7c
+        .byte $07
+
+        ; intercept end of game/next level check when not dead
+        .org $14990
+        .byte $20
+        .word nextlvl
+
+        ; intercept end of game/final score check, used when dead
+        .org $14a90
+        .byte $4c
+        .word r5300
