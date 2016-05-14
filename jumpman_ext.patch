@@ -18,9 +18,9 @@
 
         ; new call to $8023: load start sector for chosen game option
         .org $11c6d
-        .byte $20
+        .byte $4c
         .word loadlvl
-        .byte $4c,$ec,$24
+        .byte 0, 0, 0
 
         ; 2nd half of game options display list
         .byte $07,$70,$70,$47,$b4,$70,$41,$24,$25
@@ -60,7 +60,7 @@
 
         ; intercept end of game/next level check when not dead
         .org $14990
-        .byte $20
+        .byte $4c
         .word nextlvl
 
         ; intercept end of game/final score check, used when dead

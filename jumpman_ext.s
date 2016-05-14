@@ -71,7 +71,7 @@ loadlvl: ; hook into code at 24dd
         sta $30ee
         lda $250d,y
         sta $30ef
-        rts
+        jmp $24ec
 
 practice_level:
         .byte 0
@@ -80,6 +80,9 @@ practice_init: ; new code to load in practice level sector
         lda #0
         sta practice_level
 practice:
+        jsr $3100       ; reset vertical blank counters
+        jsr $2513       ; reset colors
+        jsr $3780       ; initialize working data at $3000
         jsr $3800       ; clear $7000 playfield screen
         lda #<practicedl
         sta sdlstl
@@ -199,12 +202,13 @@ button:
         sta $30e2
         lda #$30
         sta $30e3
-        lda #$40
-        sta nmien
+;        lda #$40
+;        sta nmien
+
+;        lda #0
+;        sta $4d01       ; DEBUGGING! Only one life
 
         ; replace code at 24ec to avoid chosing the number of players. Force this to be one player by doing everything that $0a00 does except waiting for the user to press a key
-        pla
-        pla
 practice2:
         lda #$00
         sta $51c9
@@ -215,6 +219,7 @@ practice2:
         sta $51c7
         lda #$27
         sta $51c8
+        jsr $3100       ; reset vertical blank counters
 
         ; replace everything before $0a12 to prevent display list and asking teh user to press a key
         jsr $0fd5       ; init gameplay VBI routines?
@@ -338,26 +343,31 @@ scr_level_loc:
         .byte 15,35,55,75,95,115,135,155
 
 
-; hook into successful level completion check. If game option 6, don't play any more levels, jump right back to the practice screen
+; hook into successful level completion check. If game option 6, don't play any more levels, jump right back to the practice screen. Real code jumps to 6d22 when there are no more levels to play, so need to duplicate what's going on there. 6d22 -> 4780 -> 3cf4 -> 6800 -> 68fd -> 0bb8
 nextlvl: ; hook into code at $5200
         lda $2603
         cmp #6
-        beq @cont
-        rts             ; continue with old level check routine
-@cont:  pla             ; pop return address off stack
-        pla
-        jsr $2513       ; reset colors
-        jmp practice
+        beq cleanup
+        jmp $5203       ; continue with old level check routine
 
-; hook into final score to intercept end of game check
+; hook into final score to intercept end of game check. Original code goes to 5600 to display end of game score, 68fd to display high score table, the 0bb8 to do something, then to 23eb to get back to game options screen.
 r5300:
         jsr $3780
         lda $2603
         cmp #6
-        beq @cont
+        beq cleanup
         jmp $5303       ; continue with old level check routine
-@cont:  jsr $2513       ; reset colors
-        jmp practice
+
+cleanup: ; copy the select handler code since select can be called at essentially any time to go back to the game options screen
+        lda #$0d
+        sta $3c33
+        sta $3c59
+        lda #$40
+        sta $d20e    ; IRQEN
+
+@done:  jmp practice
+
+        
 
 levelnames:
         .byte $04,$e5,$e1,$f3,$f9,$c0,$e4,$ef,$e5,$f3,$c0,$e9,$f4
