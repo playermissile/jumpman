@@ -1,0 +1,36 @@
+FEATURES
+{
+    STARTADDRESS: default = $A000;
+}
+
+SYMBOLS
+{
+
+}
+
+MEMORY
+{
+    ZP:         start = $0096, size = $007E, type = rw, define = yes;
+    HEADER:     start = $0000, size = $0006, file = %O;
+    RAM:        start = $0280, size = $8C80, file = %O;
+    DHEADER:    start = $0000, size = $0006, file = %O;
+    RAM1:       start = $0a00, size = $23, file = %O;
+    RAM2:       start = $0a19, size = $4e7, file = %O;
+    TRAILER:    start = $0000, size = $0006, file = %O; 
+}
+
+SEGMENTS
+{
+    STARTUP:  load = RAM,     type = ro, define = yes, optional = yes;
+    INIT:     load = RAM,     type = ro,               optional = yes;
+    CODE:     load = RAM1,    type = ro, define = yes;
+    RODATA:   load = RAM,     type = ro;
+    DATA:     load = RAM,     type = rw;
+    ZPSAVE:   load = RAM,     type = bss, define = yes, optional = yes;   
+    BSS:      load = RAM,     type = bss, define = yes;
+    HEAP:     load = RAM,     type = bss, optional = yes; # must sit just below stack
+    ZEROPAGE: load = ZP,      type = zp;
+
+    JMHACK1:  load = RAM1,    type = ro, define = yes;
+    JMHACK2:  load = RAM2,    type = ro, define = yes;
+}

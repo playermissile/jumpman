@@ -1,0 +1,8 @@
+        .org $003f
+        .byte $0b
+
+        .org $0044
+        .byte $0a
+
+        .org $0199
+        .byte $01,$0e,$06
