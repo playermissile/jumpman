@@ -30,14 +30,11 @@ wsync = $d40a
 nmien = $d40e
 setvbv = $e45c
 
-; Jumpman definitions
-joy_vert = $3020
-joy_horz = $3024
-joy_btn = $302c
-screen = $7000
-line1 = screen + 160
-line2 = screen + 180
-
+screen = $1000
+line = screen + $c8
+marquee_ptr = $80
+delay = $82
+count = $83
 
        .segment "JMHACK1"
        .ORG $0a00
@@ -52,10 +49,14 @@ dest:   STA $0600,y
         BNE loop
 
         lda #<extrascreen
-        sta $80
+        sta marquee_ptr
         lda #>extrascreen
-        sta $81
-
+        sta marquee_ptr + 1
+        jsr credits
+        lda #20
+        sta delay
+        lda #(scrolling2 - scrolling1)
+        sta count
         JMP $0800
 bootstrapend:
 
@@ -69,47 +70,45 @@ bootstrapend:
         .segment "JMHACK2"
         .org $0600 + bootstrapend - bootstrap   ; calculate offset into $0600
 
-mydisk2: inc extradl_ptr
+mydisk: 
+        lda delay
+        beq @scroll
+        dec delay
         bne @1
-        inc extradl_ptr + 1
-@1:     lda extradl_ptr
-        sta $80
-        lda extradl_ptr + 1
-        sta $81
-        ldy #8
-@2:     lda version, y
-        sta ($80), y
-        dey
-        bpl @2
 
-mydisk: inc $80
+@scroll:
+        lda count
+        beq @siov
+        dec count
+        inc marquee_ptr
         bne @1
-        inc $81
-@1:     ldy #32
+        inc marquee_ptr + 1
+@1:     jsr credits
+@siov:  jmp $e453
+
+credits:
+@1:     ldy #31
 @2:     lda ($80), y
-        sta version + 8, y
+        sta line + 8, y
         dey
         bpl @2
-        jmp $e453
-
+        ldy #7
+@3:     lda version, y
+        sta line, y
+        dey
+        bpl @3
+        rts
 
 extradl:
-;        .byte $70,$70,$70,$70,$70 ; 6x 8 BLANK boot screen display list
-;        .byte $48,$00,$10 ; LMS 1000 MODE 8
-;        .byte $08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08 ; 15x MODE 8
-;        .byte $70,$70 ; 2x 8 BLANK
-;        .byte 2    ; MODE 2
         .byte $70
-        .byte $42
-extradl_ptr:
-;        .byte <extrascreen,>extrascreen
-        .byte <version, >version
-;        .byte $41,<extradl, >extradl
+        .byte 2
         .byte $41, $ee, $08
 
 version:
-        scrcode "v1.0                                    "
+        scrcode "v1.0    "
 
 extrascreen:
-        scrcode "             2016 coding by Rob McMullen"
+        scrcode          "     2016 coding by Rob McMullen"
+scrolling1:
         scrcode ". Reverse engineering notes by Rob McMullen & Kevin Savetz available at http://playermissile.com/jumpman"
+scrolling2:
