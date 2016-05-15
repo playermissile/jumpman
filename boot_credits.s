@@ -17,6 +17,8 @@ vbreak = $206
 sdlstl = $230
 gprior = $26f
 prior = $d01b
+colpf2 = $d018
+colbk = $d01a
 audc1 = $d201
 audc2 = $d203
 audc3 = $d205
@@ -24,6 +26,7 @@ audc4 = $d207
 audctl = $d208
 dlistl = $d402
 dlisth = $d403
+wsync = $d40a
 nmien = $d40e
 setvbv = $e45c
 
@@ -47,6 +50,12 @@ loop:   LDA $0a00,y
 dest:   STA $0600,y
         INY
         BNE loop
+
+        lda #<extrascreen
+        sta $80
+        lda #>extrascreen
+        sta $81
+
         JMP $0800
 bootstrapend:
 
@@ -60,10 +69,47 @@ bootstrapend:
         .segment "JMHACK2"
         .org $0600 + bootstrapend - bootstrap   ; calculate offset into $0600
 
+mydisk2: inc extradl_ptr
+        bne @1
+        inc extradl_ptr + 1
+@1:     lda extradl_ptr
+        sta $80
+        lda extradl_ptr + 1
+        sta $81
+        ldy #8
+@2:     lda version, y
+        sta ($80), y
+        dey
+        bpl @2
+
+mydisk: inc $80
+        bne @1
+        inc $81
+@1:     ldy #32
+@2:     lda ($80), y
+        sta version + 8, y
+        dey
+        bpl @2
+        jmp $e453
+
+
 extradl:
-        .byte $70,$70 ; 3x 8 BLANK
-        .byte $42,<extrascreen,>extrascreen
-        .byte $41,$ee,$08
+;        .byte $70,$70,$70,$70,$70 ; 6x 8 BLANK boot screen display list
+;        .byte $48,$00,$10 ; LMS 1000 MODE 8
+;        .byte $08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08 ; 15x MODE 8
+;        .byte $70,$70 ; 2x 8 BLANK
+;        .byte 2    ; MODE 2
+        .byte $70
+        .byte $42
+extradl_ptr:
+;        .byte <extrascreen,>extrascreen
+        .byte <version, >version
+;        .byte $41,<extradl, >extradl
+        .byte $41, $ee, $08
+
+version:
+        scrcode "v1.0                                    "
 
 extrascreen:
-        scrcode "Practice Level v1 by Rob McMullen, 2016 "
+        scrcode "             2016 coding by Rob McMullen"
+        scrcode ". Reverse engineering notes by Rob McMullen & Kevin Savetz available at http://playermissile.com/jumpman"

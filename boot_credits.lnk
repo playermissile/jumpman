@@ -14,7 +14,7 @@ MEMORY
     HEADER:     start = $0000, size = $0006, file = %O;
     RAM:        start = $0280, size = $8C80, file = %O;
     DHEADER:    start = $0000, size = $0006, file = %O;
-    RAM1:       start = $0a00, size = $23, file = %O;
+    RAM1:       start = $0a00, size = $50, file = %O;
     RAM2:       start = $0a19, size = $4e7, file = %O;
     TRAILER:    start = $0000, size = $0006, file = %O; 
 }
