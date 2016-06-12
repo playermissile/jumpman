@@ -38,4 +38,4 @@ practice.atr: jumpman_ext.obj Jumpman\ \(1983\)\(Epyx\)\(US\)\[\!\].atr jumpman_
 	python patch-bin.py -o practice.atr practice.atr boot_credits.patch boot_credits.lst
 
 clean :
-	$(RM) *.o *~ *.map *.lst jumpman_ext.xex
+	$(RM) *.o *.obj *~ *.map *.lst jumpman_ext.xex practice.atr levelbuilder.atr
