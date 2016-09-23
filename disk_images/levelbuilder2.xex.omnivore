@@ -1,0 +1,13 @@
+# omnivore 0.12.2 extra_metadata=v1
+{
+    "comment ranges": [
+        [10866, 10867]
+    ], 
+    "comments": [
+        [10866, "Level setup? eventually calls ($283b)"]
+    ], 
+    "data ranges": [
+        [10864, 10866]
+    ], 
+    "serialized user segments": []
+}

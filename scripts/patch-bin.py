@@ -4,7 +4,23 @@ import numpy as np
 
 import argparse
 
-from omnivore.utils.textutil import text_to_int
+def text_to_int(text, default_base="dec"):
+    """ Convert text to int, raising exeception on invalid input
+    """
+    if text.startswith("0x"):
+        value = int(text[2:], 16)
+    elif text.startswith("$"):
+        value = int(text[1:], 16)
+    elif text.startswith("#"):
+        value = int(text[1:], 10)
+    elif text.startswith("%"):
+        value = int(text[1:], 2)
+    else:
+        if default_base == "dec":
+            value = int(text)
+        else:
+            value = int(text, 16)
+    return value
 
 def nm(list_path):
     names = {}
