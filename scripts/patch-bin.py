@@ -37,7 +37,7 @@ def nm(list_path):
                 continue
             if label.endswith(":"):
                 label = label[:-1]
-                print pc,label
+                print(pc,label)
                 names[label] = int(pc, 16)
     return names
 
@@ -84,15 +84,15 @@ def iter_patch(patch_path, names):
         if org and data:
             yield org, org + len(data), data
 
-   
+
 
 
 def patch_image(src_path, patch_path, list_path, dest_path):
     src = np.fromfile(src_path, dtype=np.uint8)
     names = nm(list_path)
-    print names
+    print(names)
     for start, end, data in iter_patch(patch_path, names):
-        print start, end, data
+        print(start, end, data)
         src[start:end] = data
     src.tofile(dest_path)
 
