@@ -70,7 +70,7 @@ bootstrapend:
         .segment "JMHACK2"
         .org $0600 + bootstrapend - bootstrap   ; calculate offset into $0600
 
-mydisk: 
+mydisk:
         lda delay
         beq @scroll
         dec delay
@@ -87,12 +87,12 @@ mydisk:
 @siov:  jmp $e453
 
 credits:
-@1:     ldy #31
+@1:     ldy #32
 @2:     lda ($80), y
-        sta line + 8, y
+        sta line + 7, y
         dey
         bpl @2
-        ldy #7
+        ldy #6
 @3:     lda version, y
         sta line, y
         dey
@@ -105,10 +105,10 @@ extradl:
         .byte $41, $ee, $08
 
 version:
-        scrcode "v1.0    "
+        scrcode "v1.0   "
 
 extrascreen:
-        scrcode          "     2016 coding by Rob McMullen"
+        scrcode         "        Jumpman II               "
 scrolling1:
-        scrcode ". Reverse engineering notes by Rob McMullen & Kevin Savetz available at http://playermissile.com/jumpman"
+        scrcode "Original by Randy Glover. Reverse engineering by Rob McMullen & Kay Savetz, see https://playermissile.com/jumpman"
 scrolling2:
