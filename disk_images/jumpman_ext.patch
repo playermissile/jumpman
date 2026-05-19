@@ -1,12 +1,12 @@
 ; these offsets are from the beginning of the disk image
 
-        ; check for 40k RAM
+        ; check for 48k RAM
         .org $00e4
-        .byte $a0
+        .byte $c0
 
-        ; text representation of required RAM: chars "40"
+        ; text representation of required RAM: chars "48"
         .org $022a
-        .byte $34,$30
+        .byte $34,$38
 
         ; jump location after successful boot
         .org $0266
