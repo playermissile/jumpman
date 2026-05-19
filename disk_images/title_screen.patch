@@ -37,3 +37,9 @@
 ; test to short circuit drawing routine, change 5430 to RTS
 ;        .org $5430
 ;        .byte $60
+
+; change scrolling text to say "32 levels ... 6 variations"
+        .org $59f9
+        .byte $f2
+        .org $5a20
+        .byte $f6
