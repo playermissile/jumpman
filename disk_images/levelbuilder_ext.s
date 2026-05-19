@@ -1,7 +1,7 @@
 ; Enhancements to Jumpman!
 ;
-; Copyright (c) 2016, Rob McMullen <feedback@playermissile.com>
-; Copyright (c) 2016, Kevin Savetz <antic@ataripodcast.com>
+; Copyright (c) 2016,2026 Rob McMullen <feedback@playermissile.com>
+; Copyright (c) 2016,2026 Kay Savetz <antic@ataripodcast.com>
 
 ; Loader that resides in sectors 694 - 703. That space is unused
 ; on disk but is still loaded during the boot process. It ends up
@@ -71,7 +71,7 @@ start:  .byte $20,$10,$15,$13,$08,$a0,$93,$94,$81,$92,$94,$a0,$14,$0f,$20,$10,$0
         jmp r503c
 
 
-; replace the game options display list 
+; replace the game options display list
 opt_dl: .byte $70,$70,$70 ; 3x 8 BLANK game options display list
         .byte $47,$00,$70 ; LMS 7000 MODE 7
         .byte $07    ; MODE 7

@@ -1,7 +1,7 @@
 ; Boot loader disclaimer/credits for Jumpman
 ;
-; Copyright (c) 2016, Rob McMullen <feedback@playermissile.com>
-; Copyright (c) 2016, Kevin Savetz <antic@ataripodcast.com>
+; Copyright (c) 2016,2026 Rob McMullen <feedback@playermissile.com>
+; Copyright (c) 2016,2026 Kay Savetz <antic@ataripodcast.com>
 
 ; Loader that resides in sectors 6 & 7. That space is unused
 ; on disk but not loaded in automatically, so code in the first sector

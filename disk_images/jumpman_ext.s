@@ -1,7 +1,7 @@
 ; Enhancements to Jumpman!
 ;
-; Copyright (c) 2016, Rob McMullen <feedback@playermissile.com>
-; Copyright (c) 2016, Kevin Savetz <antic@ataripodcast.com>
+; Copyright (c) 2016,2026 Rob McMullen <feedback@playermissile.com>
+; Copyright (c) 2016,2026 Kay Savetz <antic@ataripodcast.com>
 
 ; Loader that resides in sectors 694 - 703. That space is unused
 ; on disk but is still loaded during the boot process. It ends up
@@ -367,7 +367,7 @@ cleanup: ; copy the select handler code since select can be called at essentiall
 
 @done:  jmp practice
 
-        
+
 
 levelnames:
         .byte $04,$e5,$e1,$f3,$f9,$c0,$e4,$ef,$e5,$f3,$c0,$e9,$f4
