@@ -1,0 +1,39 @@
+; title screen changes
+
+; relative offset in ATR file
+        .offset $f790
+
+; widen the gray background and flashing border lights by 8 pixels either side
+; x=22 rather than 2e, width to 17 4 pixel groups rather than 11
+; flashing border is changed accordingly.
+; 583c in memory, 14fcc on disk
+        .org $583c
+        583C: FE 04 00 FC 50 5B FD 22 2F 17 FD 22 33 17 FD 22
+        584C: 37 17 FD 22 3B 17 FC 6D 5B FD 22 2F 17 FD 24 3E
+        585C: 17 FE 00 02 FD 22 2F 08 FD 7C 30 07 FF
+
+; origin in screen memory of marquee
+        .org $5876
+        .byte $60
+        .org $587e
+        .byte $b8
+        .org $5886
+        .byte $e0
+
+; width of marquee in bytes changes to 18 from 12 when copying lines down the screen
+        .org $58c6
+        .byte $18
+        .org $58f0
+        .byte $18
+
+; move Jumpman title within marquee to the left 2 bytes to leave space for the new II
+        .org $57c0
+        .byte $b2
+
+; change JSR in title screen to use our new title routine
+        .org $57dc
+        .word jumpman_ii_title
+        
+; test to short circuit drawing routine, change 5430 to RTS
+;        .org $5430
+;        .byte $60

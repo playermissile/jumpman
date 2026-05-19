@@ -35,12 +35,13 @@ levelbuilder.atr: bootloader.obj levelbuilder_ext.obj levelbuilder2.xex
 	$(XEX2ATR) -o levelbuilder.atr -b bootloader.obj levelbuilder2.xex
 	$(INSERT) -o levelbuilder.atr levelbuilder.atr levelbuilder_ext.obj 22438
 
-practice.atr: jumpman_ext.obj Jumpman\ \(1983\)\(Epyx\)\(US\)\[\!\].atr jumpman_ext.patch jumpman_ext.lst boot_credits.obj boot_credits.patch boot_credits.lst
+practice.atr: jumpman_ext.obj Jumpman\ \(1983\)\(Epyx\)\(US\)\[\!\].atr jumpman_ext.patch jumpman_ext.lst boot_credits.obj boot_credits.patch boot_credits.lst title_screen.patch
 	$(INSERT) -o practice.atr.~1 Jumpman\ \(1983\)\(Epyx\)\(US\)\[\!\].atr jumpman_ext.obj 88720
 	$(PATCH) -o practice.atr.~2 practice.atr.~1 jumpman_ext.patch jumpman_ext.lst
 	$(INSERT) -o practice.atr.~3 practice.atr.~2 boot_credits.obj 656
-	$(PATCH) -o practice.atr practice.atr.~3 boot_credits.patch boot_credits.lst
-	$(RM) practice.atr.~1 practice.atr.~2 practice.atr.~3
+	$(PATCH) -o practice.atr.~4 practice.atr.~3 boot_credits.patch boot_credits.lst
+	$(PATCH) -o practice.atr practice.atr.~4 title_screen.patch jumpman_ext.lst
+	$(RM) practice.atr.~?
 
 clean :
 	$(RM) *.o *.obj *~ *.map *.lst jumpman_ext.xex practice.atr levelbuilder.atr
