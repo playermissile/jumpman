@@ -24,79 +24,23 @@ dlisth = $d403
 nmien = $d40e
 setvbv = $e45c
 
-       .segment "JMHACK1"
-       .ORG $6300
-
-; bootstrap code called from the end of the boot sector loader, set at the
-; vector 09d6 in the boot code.
-boot2:  LDA #$80     ;copy 5 pages from $6300 to $8000
-        STA dest + 2
-        LDA #$63
-        sta loop + 2
-        LDX #$05
-        LDY #$00
-loop:   LDA $ff00,y
-dest:   STA $ff00,y
-        INY
-        BNE loop
-        INC dest + 2
-        INC loop + 2
-        DEX
-        BNE loop
-        JMP stage2
-
-
-; All this code resides at $6300 - $67ff on disk and is copied to $8000
-; by the boot2 code above. After this point, we need the origin to appear
-; as if everything was assembled at $8000. boot2 uses $23 bytes of code
-; so the new origin is $8023. If the size of boot2 changes, adjust this
-; origin and the offset in the ca65 link file!
-
         .segment "JMHACK2"
-        .org $8023      ; $23 bytes in boot2 code
+        .org $8000
 
-; reserve space for vector table so I don't have to keep changing addresses
-; in the Jumpman atr
+; jmp here so init address is always $8000
 jumptable:
-        ;jmp loadlvl
-        nop
-        nop
-        nop
-        jmp nextlvl
-
-start:  .byte $20,$10,$15,$13,$08,$a0,$93,$94,$81,$92,$94,$a0,$14,$0f,$20,$10,$0c,$01,$19,$a0 ; $14 data bytes moved copy of "press start to play"
-
         jmp xexinit
-        jmp r4400
-        jmp r503c
 
-
-; replace the game options display list
-opt_dl: .byte $70,$70,$70 ; 3x 8 BLANK game options display list
-        .byte $47,$00,$70 ; LMS 7000 MODE 7
-        .byte $07    ; MODE 7
-        .byte $87,$87,$87,$87,$87,$87 ; 6x DLI MODE 7
-        .byte $07       ; MODE 7
-        .byte $70,$70   ; **NEW!!** extra blank space because of new option
-        .byte $07       ; MODE 7
-        .byte $41
-        .word opt_dl ; JVB back to start of display list
 
 patches: ; list of patch addresses, 3 bytes per entry low, high, replacement
 
-        ; modify the game options code to point to our (larger) game options display list
-        .word $242a
-        .byte <opt_dl
-        .word $242f
-        .byte >opt_dl
-
-        ; replace level scrolling routine
-        .word $503c
+        ; replace level load routine with copy
+        .word $4400
         .byte $4c
-        .word $503d
-        .byte <r503c
-        .word $503e
-        .byte >r503c
+        .word $4401
+        .byte <r4400
+        .word $4402
+        .byte >r4400
 
         ; replace level scrolling routine
         .word $500a
@@ -106,11 +50,25 @@ patches: ; list of patch addresses, 3 bytes per entry low, high, replacement
         .word $500c
         .byte >r500a
 
-        ; short-circuit call to level scrolling routine
-;        .word $5591
-;        .byte <r5590
-;        .word $5592
-;        .byte >r5590
+        ; don't play level start music
+        .word $50d8
+        .byte $60
+
+        ; replay menu on level completion
+        .word $4c00
+        .byte $4c
+        .word $4c01
+        .byte <replay
+        .word $4c02
+        .byte >replay
+
+        ; replay menu on level fail (girder crumble)
+        .word $4ffd
+        .byte $4c
+        .word $4ffe
+        .byte <replay
+        .word $4fff
+        .byte >replay
 
         .word $ffff
 
@@ -132,33 +90,25 @@ patch:  ldx #0
         jmp @2
 
 
-stage2: ; entry point after normal ATR boot
-        ;jsr fixupdl
-        jsr patch
-        jmp $2900       ; jump back to original post-boot start addr
-
 xexinit: ; entry point for XEX boot
         jsr patch
-        jsr $3780       ; clear memory
-        jsr $3820       ; set up character set
-        lda #$ff        ; flag to load test level instead of accessing disk
-        sta $30ef
-        sta fastload
         lda #<youbigdummy
         sta vbreak
         lda #>youbigdummy
         sta vbreak + 1
 
-practice2:
+startlevel:
         lda #$00
         sta $51c9
         sta $4106
-        jsr $3780
-        jsr $2640
+        jsr $3780       ; clear working data, reset audio
+        jsr $3820       ; set up character set
+        jsr $2640       ; show blank screen
         lda #$10
         sta $51c7
         lda #$27
         sta $51c8
+        jsr $3100       ; reset VBI counters
 
         ; replace everything before $0a12 to prevent display list and asking teh user to press a key
         jsr $0fd5       ; init gameplay VBI routines?
@@ -166,59 +116,26 @@ practice2:
         jmp $0a12       ; skip over the display list portion of $0a00
 
 
-
-; hook into level completion check. If game option 6, don't play any more levels, jump right back to the game options screen
-nextlvl: ; hook into code at $5200
-        lda $2603
-        cmp #6
-        beq @cont
-        rts             ; continue with old level check routine
-@cont:  pla             ; pop return address off stack
-        pla
-        lda #1          ; fake out being beginner level
-        sta $2603
-        lda #$ff
-        sta $30f0
-        jmp $23eb       ; jump to game options entry point
-
-
-r4400: ; replacement for 4400 to skip loading if $#ff passed in high sector
-        lda $30ef
-        cmp #$ff
-        beq @1
-        jsr $443c
-        jmp $4403
-@1:     lda #$88        ; copy working level to $2800
+r4400: ; replacement for 4400 to load level from memory rather than disk
+        lda #$88        ; copy working level to $2800
         ldy #$28
         ldx #$8
         jsr copypg
+
+        lda numlives
+        sta $30f0
+
         rts
 
-fastload: .byte $0
-
-r503c: ; replacement for slow scroll to copy screen
-        lda fastload
-        cmp #$ff
-        beq @1
-        lda $50d6
-        jmp $503f
-@1:     lda #0
-        sta $e0
-        jsr copyscr
-        jmp $5049
 
 r500a:  jsr $331c
-        lda fastload
-        cmp #$ff
-        beq @1
-        jmp $500d
-@1:     jsr $56af
+        ;jsr $56af ; delay loop necessary?
         ldx #$50
         ldy #$cb
         lda #$07
         jsr $e45c    ; SETVBV
 
-        jsr $56af
+        ;jsr $56af  ; delay loop necessary?
 
         lda #$c0
         sta $d40e    ; NMIEN
@@ -228,7 +145,7 @@ r500a:  jsr $331c
 ;        lda #$40
 ;        sta $d40e    ; NMIEN
 
-        jsr $56af
+        ;jsr $56af
 
         lda #$4d ; fixes the flashy problems by removing the DLI on the first line
         sta $3c03
@@ -241,12 +158,6 @@ r500a:  jsr $331c
 ; play
 
 
-
-; currently, this results in an empty playfield! Still flashy!
-r5590:  jsr $3800
-        jsr $331c
-        jsr copyscr
-        rts
 
 copyscr: lda #$10
         ldy #$70
@@ -432,3 +343,28 @@ scrpeanuts:
         scrcode "                    "
         scrcode "                    "
         scrcode "                    "
+
+numlives:
+        .byte 0
+
+; Retry screen: after completing level or level failed, return to this screen to
+; allow a replay. Speed and number of lives can be changed
+replay:
+        lda #$1b       ; reset VBI routines
+        sta $3087
+        sta $3089
+        sta $308b
+        sta $308e
+        lda #$31
+        sta $308a
+        sta $308c
+        sta $3088
+        sta $308f
+        ldx #$08       ; move all players & missiles off screen
+        lda #$00
+@1:     sta $cfff,x
+        dex
+        bne @1
+@forever:
+        ;jmp @forever
+        jmp startlevel
