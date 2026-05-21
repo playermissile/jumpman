@@ -37,7 +37,7 @@ def nm(list_path):
                 continue
             if label.endswith(":"):
                 label = label[:-1]
-                print(pc,label)
+                if options.debug: print(pc,label)
                 names[label] = int(pc, 16)
     return names
 
@@ -52,6 +52,7 @@ def iter_patch(patch_path, names):
     org = None
     offset = 0
     data = []
+    info = []
     with open(patch_path) as fh:
         for line in fh.readlines():
             line = line.lstrip()
@@ -63,8 +64,9 @@ def iter_patch(patch_path, names):
             cmd = cmd.lower()
             if cmd == ".org":
                 if org and data:
-                    yield offset + org, offset + org + len(data), data
+                    yield offset + org, offset + org + len(data), data, info
                     data = []
+                    info = []
                 org = text_to_int(tokens[0])
             elif cmd == ".offset":
                 offset = text_to_int(tokens[0])
@@ -73,6 +75,7 @@ def iter_patch(patch_path, names):
                 for v in tokens:
                     if v in names:
                         add_bytes(values, names[v])
+                        info.append(f"{v}={names[v]:x}")
                     else:
                         add_bytes(values, text_to_int(v))
                 data.extend(values)
@@ -81,6 +84,7 @@ def iter_patch(patch_path, names):
                 for v in tokens:
                     if v in names:
                         add_bytes(values, names[v])
+                        info.append(f"{v}={names[v]:x}")
                     else:
                         add_bytes(values, text_to_int(v))
                 data.extend(values)
@@ -93,7 +97,7 @@ def iter_patch(patch_path, names):
                 data.extend(values)
 
         if org and data:
-            yield offset + org, offset + org + len(data), data
+            yield offset + org, offset + org + len(data), data, info
 
 class XEX:
     def __init__(self, data):
@@ -131,11 +135,12 @@ class XEX:
             pos += 4 + count
         return segments
 
-    def patch(self, start, end, data):
+    def patch(self, start, end, data, info):
         for b, s, e in self.segments:
             if start >= s and end <= e:
                 b[start - s + 4:end - s + 4] = data
-                print(f"patched {start:x}-{end:x} in {s:x}-{e:x}: {len(data):x} bytes")
+                txt = " ".join(info)
+                print(f"patched {start:x}-{end:x} in {s:x}-{e:x}: {len(data):x} bytes {txt}")
                 break
         else:
             RuntimeError(f"range {start}-{end} not in segments")
@@ -150,9 +155,10 @@ class ATR:
     def __init__(self, data):
         self.src = data
 
-    def patch(self, start, end, data):
+    def patch(self, start, end, data, info):
         self.src[start:end] = data
-        print(f"patched {start:x}-{end:x}: {len(data):x} bytes")
+        txt = " ".join(info)
+        print(f"patched {start:x}-{end:x}: {len(data):x} bytes {txt}")
 
     def save(self, path):
         self.src.tofile(path)
@@ -161,7 +167,6 @@ def patch_image(src_path, patch_path, list_path, dest_path):
     src = np.fromfile(src_path, dtype=np.uint8)
     if list_path:
         names = nm(list_path)
-        print(names)
     else:
         names = {}
 
@@ -169,8 +174,8 @@ def patch_image(src_path, patch_path, list_path, dest_path):
         f = XEX(src)
     else:
         f = ATR(src)
-    for start, end, data in iter_patch(patch_path, names):
-        f.patch(start, end, data)
+    for start, end, data, info in iter_patch(patch_path, names):
+        f.patch(start, end, data, info)
     f.save(dest_path)
 
 if __name__ == "__main__":
