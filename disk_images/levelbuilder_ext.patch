@@ -1,0 +1,25 @@
+; level builder patches
+
+; replace level load routine with fast copy
+        .org $4400
+        .byte $4c
+        .word r4400
+
+; replace level scrolling routine
+        .org $500a
+        .byte $4c
+        .word r500a
+
+; don't play level start music
+        .org $50d8
+        .byte $60
+
+; replay menu on level completion
+        .org $4c00
+        .byte $4c
+        .word replay
+
+; after last life, skip level crumble and jump into our replay routine
+        .org $602e
+        .byte $4c
+        .word replay

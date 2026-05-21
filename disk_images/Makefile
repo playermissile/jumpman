@@ -36,7 +36,7 @@ levelbuilder.xex: $(JUMPMAN_SRC) levelbuilder_ext.obj
 	$(ADDXEX) -o levelbuilder.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
 	$(ADDXEX) -o levelbuilder.xex -a 0x8000 levelbuilder_ext.obj # add xex initialization
 	$(ADDXEX) -o levelbuilder.xex -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
-#	$(ADDXEX) -o levelbuilder.xex -a 0x02e0 BYTES 0x00 0x0a # add RUNINI
+	$(PATCH) -o levelbuilder.xex levelbuilder.xex levelbuilder_ext.patch levelbuilder_ext.lst
 
 bootloader.obj : bootloader.o bootloader.lnk
 	ld65 -o bootloader.obj -C bootloader.lnk bootloader.o

@@ -95,8 +95,67 @@ def iter_patch(patch_path, names):
         if org and data:
             yield offset + org, offset + org + len(data), data
 
+class XEX:
+    def __init__(self, data):
+        self.segments = self.parse(data)
 
+    def parse(self, b):
+        size = np.alen(b)
+        pos = 0
+        first = True
+        segments = []
+        while pos < size:
+            if pos + 1 < size:
+                header, = b[pos:pos+2].view(dtype='<u2')
+            else:
+                raise RuntimeError("Incomplete Data")
+            if header == 0xffff:
+                # Apparently 0xffff header can appear in any segment, not just
+                # the first.  Regardless, it is ignored everywhere.
+                pos += 2
+                first = False
+                continue
+            elif first:
+                raise RuntimeError("Object file doesn't start with 0xffff")
+            if options.debug: print("header parsing: header=0x%x" % header)
+            if len(b[pos:pos + 4]) < 4:
+                raise RuntimeError("Short Segment Header")
+            start, end = b[pos:pos + 4].view(dtype='<u2')
+            if end < start:
+                raise RuntimeError("Nonsensical start and end addresses")
+            count = end - start + 1
+            found = len(b[pos + 4:pos + 4 + count])
+            if found < count:
+                raise RuntimeError("Incomplete Data")
+            segments.append((b[pos:pos + 4 + count], start, end))
+            pos += 4 + count
+        return segments
 
+    def patch(self, start, end, data):
+        for b, s, e in self.segments:
+            if start >= s and end <= e:
+                b[start - s + 4:end - s + 4] = data
+                print(f"patched {start:x}-{end:x} in {s:x}-{e:x}: {len(data):x} bytes")
+                break
+        else:
+            RuntimeError(f"range {start}-{end} not in segments")
+
+    def save(self, path):
+        with open(path, "wb") as fh:
+            fh.write(b"\xff\xff") # force XEX header
+            for b, s, e in self.segments:
+                fh.write(b.tobytes())
+
+class ATR:
+    def __init__(self, data):
+        self.src = data
+
+    def patch(self, start, end, data):
+        self.src[start:end] = data
+        print(f"patched {start:x}-{end:x}: {len(data):x} bytes")
+
+    def save(self, path):
+        self.src.tofile(path)
 
 def patch_image(src_path, patch_path, list_path, dest_path):
     src = np.fromfile(src_path, dtype=np.uint8)
@@ -105,10 +164,14 @@ def patch_image(src_path, patch_path, list_path, dest_path):
         print(names)
     else:
         names = {}
+
+    if src_path.lower().endswith("xex"):
+        f = XEX(src)
+    else:
+        f = ATR(src)
     for start, end, data in iter_patch(patch_path, names):
-        print(start, end, data)
-        src[start:end] = data
-    src.tofile(dest_path)
+        f.patch(start, end, data)
+    f.save(dest_path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Insert file into another file")

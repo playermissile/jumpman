@@ -27,71 +27,7 @@ setvbv = $e45c
         .segment "JMHACK2"
         .org $8000
 
-; jmp here so init address is always $8000
-jumptable:
-        jmp xexinit
-
-
-patches: ; list of patch addresses, 3 bytes per entry low, high, replacement
-
-        ; replace level load routine with copy
-        .word $4400
-        .byte $4c
-        .word $4401
-        .byte <r4400
-        .word $4402
-        .byte >r4400
-
-        ; replace level scrolling routine
-        .word $500a
-        .byte $4c
-        .word $500b
-        .byte <r500a
-        .word $500c
-        .byte >r500a
-
-        ; don't play level start music
-        .word $50d8
-        .byte $60
-
-        ; replay menu on level completion
-        .word $4c00
-        .byte $4c
-        .word $4c01
-        .byte <replay
-        .word $4c02
-        .byte >replay
-
-        ; replay menu on level fail (girder crumble)
-        .word $4ffd
-        .byte $4c
-        .word $4ffe
-        .byte <replay
-        .word $4fff
-        .byte >replay
-
-        .word $ffff
-
-patch:  ldx #0
-        ldy #0
-@2:     lda patches,x
-        sta $82
-        inx
-        lda patches,x
-        sta $83
-        inx
-        and $82
-        cmp #$ff
-        bne @1
-        rts
-@1:     lda patches,x
-        inx
-        sta ($82),y
-        jmp @2
-
-
 xexinit: ; entry point for XEX boot
-        jsr patch
         lda #<youbigdummy
         sta vbreak
         lda #>youbigdummy
