@@ -1,11 +1,14 @@
-; Enhancements to Jumpman!
+; Levelbuilder test code
 ;
 ; Copyright (c) 2016,2026 Rob McMullen <feedback@playermissile.com>
 ; Copyright (c) 2016,2026 Kay Savetz <antic@ataripodcast.com>
 
-; Loader that resides in sectors 694 - 703. That space is unused
-; on disk but is still loaded during the boot process. It ends up
-; in memory at $6300 - $67ff, so we have 5 pages to work with.
+; Modifications to Jumpman code to boot into level, skipping all then
+; menu code.
+;
+; TODO:
+; * SELECT during gameplay should return to replay screen
+; * START during gameplay should do nothing (currently attempts to restart)
 
         .macpack atari
 
