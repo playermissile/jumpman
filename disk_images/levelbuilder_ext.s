@@ -7,7 +7,6 @@
 ; menu code.
 ;
 ; TODO:
-; * improved crash screen, differentiate between peanut harvest and crash
 ; * handle system reset to restart
 ; * disable cartridge on XL
 
@@ -37,10 +36,112 @@ setvbv = $e45c
         .segment "JMHACK2"
         .org $8000
 
+        jmp xexinit
+
+numlives:
+        .byte 0
+speed:
+        .byte 3
+crashtesting:
+        .byte 1
+
+
+; graphics data here so display lists and screen data guaranteed not to cross
+; a 4k boundary.
+
+harvestdl:
+        .byte $70,$70,$70 ; 3x 8 BLANK
+        .byte $47,<harvestscreen,>harvestscreen ; LMS MODE 7
+        .byte $70,6,6,6,6,$70
+        .byte 7,6,6,6,6,6,6,6
+        .byte $41,<harvestdl,>harvestdl
+
+harvestscreen:
+        scrcode "PEANUT HARVEST ERROR"
+        scrcode "284E OFFSET X: "
+scroffsetx:
+        scrcode "FF   "
+        scrcode "284F OFFSET Y: "
+scroffsety:
+        scrcode "FF   "
+        scrcode "306A JUMPMAN X: "
+scrjumpmanx:
+        scrcode "FF  "
+        scrcode "306F JUMPMAN Y: "
+scrjumpmany:
+        scrcode "FF  "
+        scrcode "HARVEST TABLE: "
+scrpeanutaddr:
+        scrcode "XXXX "
+        scrcode "DID NOT FIND: "
+scrchecksum:
+        scrcode               "FF    "
+scrpeanuts:
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "                    "
+
+
+crashdl:
+        .byte $70,$70,$70 ; 3x 8 BLANK
+        .byte $47,<crashscreen,>crashscreen ; LMS MODE 7
+        .byte $41,<crashdl,>crashdl
+
+crashscreen:
+        scrcode "CRASH AT ADDR: "
+scraddr:
+        scrcode                "     "
+
+
+replaydl:
+        .byte $70,$70,$70 ; 3x 8 BLANK
+        .byte $47,<replayscreen,>replayscreen ; LMS MODE 7
+        .byte $70,$70,$70,$70
+        .byte 7
+        .byte $70,$70
+        .byte 7
+        .byte $70,$70,$70
+        .byte 7,7
+        .byte $70
+        .byte 6,6,6,6
+        .byte $41,<replaydl,>replaydl
+
+replayscreen:
+        ;          "01234567890123456789"
+        scrcode    "   replay options   "
+        scrcode    "SPEED (1-8): "
+replayspeed:
+        scrcode                 "4      "
+        scrcode    "LIVES (9,0): "
+replaylives:
+        scrcode                 "9      "
+        scrcode    "   press trigger    "
+        scrcode    "      or start      "
+        invscrcode "kbcode: "
+replaykbcode:
+        invscrcode         "ff          "
+        invscrcode "consol: "
+replayconsol:
+        invscrcode         "ff          "
+        invscrcode " stick: "
+replaystick:
+        invscrcode         "ff          "
+        invscrcode "  trig: "
+replaytrig0:
+        invscrcode         "ff          "
+
+
+
+
+
 xexinit: ; entry point for XEX boot
-        lda #<youbigdummy
+        lda #<brkhandler
         sta vbreak
-        lda #>youbigdummy
+        lda #>brkhandler
         sta vbreak + 1
 
 startlevel:
@@ -62,7 +163,33 @@ startlevel:
 
 
 r4400: ; replacement for 4400 to load level from memory rather than disk
-        lda #$88        ; copy working level to $2800
+        lda #<replay
+        sta $4104
+        lda #>replay
+        sta $4105
+        lda #1          ; disable
+        sta $4106       ;  START
+        lda #2          ; disable
+        sta $4107       ;  SELECT
+        lda #0          ; enable
+        sta $4108       ;  OPTION
+
+; TESTING! Cause BRK instruction on SELECT press
+        lda crashtesting
+        beq @cont
+
+; move harvest grid to invalid position for peanut above and to left of Jumpman on Easy Does It
+        lda #$18
+        sta $8846
+
+        lda #$f0
+        sta $4102
+        lda #$88
+        sta $4103
+        lda #0
+        sta $4107       ; enable SELECT to cause crash
+
+@cont:  lda #$88        ; copy working level to $2800
         ldy #$28
         ldx #$8
         jsr copypg
@@ -74,17 +201,6 @@ r4400: ; replacement for 4400 to load level from memory rather than disk
         sta $30ff
         lda $4d5f,y     ; table of speed values
         sta $30fe
-
-        lda #<replay
-        sta $4104
-        lda #>replay
-        sta $4105
-        lda #1          ; disable
-        sta $4106       ;  START
-        lda #2          ; disable
-        sta $4107       ;  SELECT
-        lda #0          ; enable
-        sta $4108       ;  OPTION
         rts
 
 
@@ -140,10 +256,40 @@ copypg: sta @1 + 2
         bne @1
         rts
 
-; Harvest table crash page. Intercept the BRK operator that occurs
-; when there's a harvest table miss and display the relevant info.
+; BRK handler for harvest table miss and general code crashes. A BRK opcode occurs
+; when there's a harvest table miss, so one crash screen will display the relevant info.
+; A second crash screen will be displayed if a BRK occurs any other place.x
 ; We are in an interrupt handler here, so need to end with RTI
-youbigdummy:
+brkhandler:
+        tsx                 ; get stack pointer
+        lda $103,x          ; low byte of addr of BRK instruction +2
+        sec                 ; subtract 2
+        sbc #2              ; to get actual low byte
+        sta $e0             ; save
+        lda $104,x          ; high byte of addr of BRK instruction +2
+        sbc #0              ; compute real addr
+        sta $e1             ; save
+        lda $e0
+        cmp #$48
+        bne @crash
+        lda $e1
+        cmp #$4b
+        beq @harvest
+@crash:
+        lda $e1
+        jsr hex2text
+        sta scraddr
+        stx scraddr + 1
+        lda $e0
+        jsr hex2text
+        sta scraddr + 2
+        stx scraddr + 3
+        ldx #>crashdl
+        ldy #<crashdl
+        jsr showdl
+        jmp fixrti
+
+@harvest:
         lda $bc         ; checksum value
         jsr hex2text
         sta scrchecksum
@@ -184,7 +330,7 @@ ploop:
         ldy $85
         lda ($ba),y
         cmp #$ff
-        beq showdl
+        beq @endploop
         sty $85
         jsr hex2text
         ldy $84
@@ -202,10 +348,12 @@ ploop:
         sta $85
         bcc ploop       ; don't go into endless loop if missing FF
 
-        ldx #>dummydl
-        ldy #<dummydl
+@endploop:
+        ldx #>harvestdl
+        ldy #<harvestdl
         jsr showdl
 
+fixrti:
         pla             ; mess with stack to return to our wait loop
         sta $80         ; there are two vars on the stack, then the return
         pla             ; address.
@@ -270,47 +418,6 @@ showdl:
         jsr setvbv
         rts
 
-dummydl:
-        .byte $70,$70,$70,$70,$70 ; 3x 8 BLANK
-        .byte $47,<dummyscreen,>dummyscreen ; LMS MODE 6
-        .byte $70,$06,$06,$06,$06,$06,$70
-        .byte 7,6,6,6,6,6,6,6
-        .byte $41,<dummydl,>dummydl
-
-dummyscreen:
-        scrcode "PEANUT HARVEST ERROR"
-        scrcode "00BC CHECKSUM: "
-scrchecksum:
-        scrcode "FF   "
-        scrcode "284E OFFSET X: "
-scroffsetx:
-        scrcode "FF   "
-        scrcode "284F OFFSET Y: "
-scroffsety:
-        scrcode "FF   "
-        scrcode "306A JUMPMAN X: "
-scrjumpmanx:
-        scrcode "FF  "
-        scrcode "306F JUMPMAN Y: "
-scrjumpmany:
-        scrcode "FF  "
-        scrcode "HARVEST TABLE: "
-scrpeanutaddr:
-        scrcode "XXXX "
-scrpeanuts:
-        scrcode "                    "
-        scrcode "                    "
-        scrcode "                    "
-        scrcode "                    "
-        scrcode "                    "
-        scrcode "                    "
-        scrcode "                    "
-
-numlives:
-        .byte 0
-speed:
-        .byte 3
-
 ; Retry screen: after completing level or level failed, return to this screen to
 ; allow a replay. Speed and number of lives can be changed
 replay:
@@ -343,6 +450,8 @@ replay:
         ldx #>replaydl
         ldy #<replaydl
         jsr showdl
+
+        jsr waitkeyrelease
 
 @input:
         ldy kbcode
@@ -409,40 +518,10 @@ replay:
 @run:
         jmp startlevel
 
-
-replaydl:
-        .byte $70,$70,$70 ; 3x 8 BLANK
-        .byte $47,<replayscreen,>replayscreen ; LMS MODE 7
-        .byte $70,$70,$70,$70
-        .byte 7
-        .byte $70,$70
-        .byte 7
-        .byte $70,$70,$70
-        .byte 7,7
-        .byte $70
-        .byte 6,6,6,6
-        .byte $41,<replaydl,>replaydl
-
-replayscreen:
-        ;          "01234567890123456789"
-        scrcode    "   replay options   "
-        scrcode    "SPEED (1-8): "
-replayspeed:
-        scrcode                 "4      "
-        scrcode    "LIVES (9,0): "
-replaylives:
-        scrcode                 "9      "
-        scrcode    "   press trigger    "
-        scrcode    "      or start      "
-        invscrcode "kbcode: "
-replaykbcode:
-        invscrcode         "ff          "
-        invscrcode "consol: "
-replayconsol:
-        invscrcode         "ff          "
-        invscrcode " stick: "
-replaystick:
-        invscrcode         "ff          "
-        invscrcode "  trig: "
-replaytrig0:
-        invscrcode         "ff          "
+waitkeyrelease:
+@2:     lda consol          ; wait until any CONSOL button is released
+        cmp #7
+        bne @2
+@3:     lda trig0           ; wait until trigger is released
+        beq @3
+        rts
