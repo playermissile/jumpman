@@ -7,8 +7,9 @@
 ; menu code.
 ;
 ; TODO:
-; * SELECT during gameplay should return to replay screen
-; * START during gameplay should do nothing (currently attempts to restart)
+; * improved crash screen, differentiate between peanut harvest and crash
+; * handle system reset to restart
+; * disable cartridge on XL
 
         .macpack atari
 
@@ -45,7 +46,6 @@ xexinit: ; entry point for XEX boot
 startlevel:
         lda #$00
         sta $51c9
-        sta $4106
         jsr $3780       ; clear working data, reset audio
         jsr $3820       ; set up character set
         jsr $2640       ; show blank screen
@@ -74,6 +74,17 @@ r4400: ; replacement for 4400 to load level from memory rather than disk
         sta $30ff
         lda $4d5f,y     ; table of speed values
         sta $30fe
+
+        lda #<replay
+        sta $4104
+        lda #>replay
+        sta $4105
+        lda #1          ; disable
+        sta $4106       ;  START
+        lda #2          ; disable
+        sta $4107       ;  SELECT
+        lda #0          ; enable
+        sta $4108       ;  OPTION
         rts
 
 
