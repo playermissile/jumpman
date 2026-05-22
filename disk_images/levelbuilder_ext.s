@@ -13,12 +13,18 @@ atract = $4d
 vbreak = $206
 sdlstl = $230
 gprior = $26f
+trig0 = $d010
 prior = $d01b
+consol = $d01f
 audc1 = $d201
 audc2 = $d203
 audc3 = $d205
 audc4 = $d207
 audctl = $d208
+kbcode = $d209
+ch = $2fc
+skstat = $d20f
+porta = $d300
 dlistl = $d402
 dlisth = $d403
 nmien = $d40e
@@ -60,7 +66,11 @@ r4400: ; replacement for 4400 to load level from memory rather than disk
 
         lda numlives
         sta $30f0
-
+        ldy speed
+        lda $4d57,y     ; table of printable characters
+        sta $30ff
+        lda $4d5f,y     ; table of speed values
+        sta $30fe
         rts
 
 
@@ -178,29 +188,9 @@ ploop:
         sta $85
         bcc ploop       ; don't go into endless loop if missing FF
 
-
-showdl:
-        lda #<dummydl
-        sta sdlstl
-        sta dlistl
-        lda #>dummydl
-        sta dlisth
-        sta sdlstl + 1
-        lda #$40
-        sta nmien
-        lda #0
-        sta audctl
-        sta audc1
-        sta audc2
-        sta audc3
-        sta audc4
-        lda #$14
-        sta gprior
-        sta prior
-        ldx #$e4
-        ldy #$62
-        lda #$07
-        jsr setvbv
+        ldx #>dummydl
+        ldy #<dummydl
+        jsr showdl
 
         pla             ; mess with stack to return to our wait loop
         sta $80         ; there are two vars on the stack, then the return
@@ -222,7 +212,7 @@ wait:   nop
 @1:     jmp @1
 
 ; convert hex value in A to two characters, high nibble returned
-; in A, low nibble in X
+; in A, low nibble in X, Y clobbered with value of A
 hex2text:
         tay     ; save temporarily
         and #$0f
@@ -242,7 +232,29 @@ hex2text:
 @2:     adc #16
         rts
 
-
+; show display list and turn off anything behind the scenes, like audio, DLIs or VBIs.
+; High byte in X, low byte in Y for display list
+showdl:
+        sty sdlstl
+        sty dlistl
+        stx dlisth
+        stx sdlstl + 1
+        lda #$40
+        sta nmien
+        lda #0
+        sta audctl
+        sta audc1
+        sta audc2
+        sta audc3
+        sta audc4
+        lda #$14
+        sta gprior
+        sta prior
+        ldx #$e4
+        ldy #$62
+        lda #$07
+        jsr setvbv
+        rts
 
 dummydl:
         .byte $70,$70,$70,$70,$70 ; 3x 8 BLANK
@@ -282,6 +294,8 @@ scrpeanuts:
 
 numlives:
         .byte 0
+speed:
+        .byte 3
 
 ; Retry screen: after completing level or level failed, return to this screen to
 ; allow a replay. Speed and number of lives can be changed
@@ -301,6 +315,120 @@ replay:
 @1:     sta $cfff,x
         dex
         bne @1
-@forever:
-        ;jmp @forever
+
+        lda $30ff
+        clc
+        adc #17
+        sta replayspeed
+
+        lda numlives
+        clc
+        adc #17
+        sta replaylives
+
+        ldx #>replaydl
+        ldy #<replaydl
+        jsr showdl
+
+@input:
+        ldy kbcode
+        lda skstat
+        and #4
+        beq @storekey
+        ldy #$ff
+@storekey:
+        sty ch
+        tya
+        jsr hex2text
+        sta replaykbcode
+        stx replaykbcode + 1
+
+        lda porta
+        jsr hex2text
+        sta replaystick
+        stx replaystick + 1
+
+        lda consol
+        sta @smcconsol + 1
+        jsr hex2text
+        sta replayconsol
+        stx replayconsol + 1
+@smcconsol:
+        lda #00
+        cmp #6              ; start
+        beq @run
+        lda trig0
+        jsr hex2text
+        sta replaytrig0
+        stx replaytrig0 + 1
+        lda trig0
+        beq @run
+        lda ch
+        cmp #$30            ; 9
+        bne @key1
+        lda #9
+        sta numlives
+        lda #16 + 9
+        sta replaylives
+        bne @input
+@key1:  cmp #$32            ; 0
+        bne @key2
+        lda #0
+        sta numlives
+        lda #16
+        sta replaylives
+@key2:
+        ldy #$08
+@key3:  lda $4d4f-1,y     ; table of keycode values matching numbers 1-8
+        cmp ch
+        beq @key4
+        dey
+        bne @key3
+        beq @input
+@key4:  lda $4d56,y     ; table of speed values
+        sta speed
+        clc
+        adc #17
+        sta replayspeed
+
+        jmp @input
+@run:
         jmp startlevel
+
+
+replaydl:
+        .byte $70,$70,$70 ; 3x 8 BLANK
+        .byte $47,<replayscreen,>replayscreen ; LMS MODE 7
+        .byte $70,$70,$70,$70
+        .byte 7
+        .byte $70,$70
+        .byte 7
+        .byte $70,$70,$70
+        .byte 7,7
+        .byte $70
+        .byte 6,6,6,6
+        .byte $41,<replaydl,>replaydl
+
+replayscreen:
+        ;          "01234567890123456789"
+        scrcode    "   replay options   "
+        scrcode    "SPEED (1-8): "
+replayspeed:
+        scrcode                 "4      "
+        scrcode    "LIVES (9,0): "
+replaylives:
+        scrcode                 "9      "
+        scrcode    "   press trigger    "
+        scrcode    "      or start      "
+        invscrcode "kbcode: "
+replaykbcode:
+        invscrcode         "ff          "
+        invscrcode "consol: "
+replayconsol:
+        invscrcode         "ff          "
+        invscrcode " stick: "
+replaystick:
+        invscrcode         "ff          "
+        invscrcode "  trig: "
+replaytrig0:
+        invscrcode         "ff          "
