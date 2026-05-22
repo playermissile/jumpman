@@ -27,7 +27,7 @@ levelbuilder_ext.obj : levelbuilder_ext.o levelbuilder_ext.lnk
 levelbuilder_ext.lst levelbuilder_ext.o : levelbuilder_ext.s
 	ca65 -l levelbuilder_ext.lst levelbuilder_ext.s -o levelbuilder_ext.o
 
-levelbuilder.xex: $(JUMPMAN_SRC) levelbuilder_ext.obj
+levelbuilder.xex: $(JUMPMAN_SRC) levelbuilder_ext.obj levelbuilder_ext.patch
 	-rm levelbuilder.xex
 	$(ADDXEX) -o levelbuilder.xex -a 0x8800 $(JUMPMAN_SRC) --atr 17 32 # add Easy Does It
 	$(ADDXEX) -o levelbuilder.xex -a 0x0a00 $(JUMPMAN_SRC) --atr 548 559 # add 0xa00-0xfff
