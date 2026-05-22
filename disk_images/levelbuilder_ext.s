@@ -43,7 +43,7 @@ numlives:
 speed:
         .byte 3
 crashtesting:
-        .byte 1
+        .byte 0
 
 
 ; graphics data here so display lists and screen data guaranteed not to cross
@@ -197,9 +197,9 @@ r4400: ; replacement for 4400 to load level from memory rather than disk
         lda numlives
         sta $30f0
         ldy speed
-        lda $4d57,y     ; table of printable characters
+        lda $4d57,y     ; table of speed values
         sta $30ff
-        lda $4d5f,y     ; table of speed values
+        lda $4d5f,y     ; table of printable characters
         sta $30fe
         rts
 
@@ -444,7 +444,7 @@ replay:
 
         lda numlives
         clc
-        adc #17
+        adc #16
         sta replaylives
 
         ldx #>replaydl
