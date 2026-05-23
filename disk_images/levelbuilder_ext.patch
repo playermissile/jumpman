@@ -5,6 +5,11 @@
         .byte $4c
         .word r4400
 
+; intercept bad harvest table
+        .org $4b46
+        .byte $4c
+        .word r4b46
+
 ; replace level scrolling routine
         .org $500a
         .byte $4c

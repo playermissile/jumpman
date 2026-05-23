@@ -44,8 +44,6 @@ speed:
         .byte 3
 crashtesting:
         .byte 0
-usebrkhandler:
-        .byte 0
 
 
 ; graphics data here so display lists and screen data guaranteed not to cross
@@ -55,7 +53,7 @@ harvestdl:
         .byte $70,$70,$70 ; 3x 8 BLANK
         .byte $47,<harvestscreen,>harvestscreen ; LMS MODE 7
         .byte $70,6,6,6,6,$70
-        .byte 7,6,6,6,6,6,6,6
+        .byte 7,6,6,6,6,6,6,6,6,6,6,6,7
         .byte $41,<harvestdl,>harvestdl
 
 harvestscreen:
@@ -86,17 +84,10 @@ scrpeanuts:
         scrcode "                    "
         scrcode "                    "
         scrcode "                    "
-
-
-crashdl:
-        .byte $70,$70,$70 ; 3x 8 BLANK
-        .byte $47,<crashscreen,>crashscreen ; LMS MODE 7
-        .byte $41,<crashdl,>crashdl
-
-crashscreen:
-        scrcode "CRASH AT ADDR: "
-scraddr:
-        scrcode                "     "
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "                    "
+        scrcode "   press trigger    "
 
 
 replaydl:
@@ -142,12 +133,6 @@ replaytrig0:
 
 
 xexinit: ; entry point for XEX boot
-        lda usebrkhandler
-        beq startlevel
-        lda #<brkhandler
-        sta vbreak
-        lda #>brkhandler
-        sta vbreak + 1
 
 startlevel:
         lda #$00
@@ -269,39 +254,11 @@ copypg: sta @1 + 2
         bne @1
         rts
 
-; BRK handler for harvest table miss and general code crashes. A BRK opcode occurs
-; when there's a harvest table miss, so one crash screen will display the relevant info.
-; A second crash screen will be displayed if a BRK occurs any other place.x
-; We are in an interrupt handler here, so need to end with RTI
-brkhandler:
-        tsx                 ; get stack pointer
-        lda $103,x          ; low byte of addr of BRK instruction +2
-        sec                 ; subtract 2
-        sbc #2              ; to get actual low byte
-        sta $e0             ; save
-        lda $104,x          ; high byte of addr of BRK instruction +2
-        sbc #0              ; compute real addr
-        sta $e1             ; save
-        lda $e0
-        cmp #$48
-        bne @crash
-        lda $e1
-        cmp #$4b
-        beq @harvest
-@crash:
-        lda $e1
-        jsr hex2text
-        sta scraddr
-        stx scraddr + 1
-        lda $e0
-        jsr hex2text
-        sta scraddr + 2
-        stx scraddr + 3
-        ldx #>crashdl
-        ldy #<crashdl
-        jsr showdl
-        jmp fixrti
 
+; replacement for harvest table end. Patched into $4b46
+r4b46:
+        beq @harvest    ; expecting $ff; if not, then crash
+        jmp $4b49       ; continue with harvest table processing
 @harvest:
         lda $bc         ; checksum value
         jsr hex2text
@@ -365,26 +322,12 @@ ploop:
         ldx #>harvestdl
         ldy #<harvestdl
         jsr showdl
-
-fixrti:
-        pla             ; mess with stack to return to our wait loop
-        sta $80         ; there are two vars on the stack, then the return
-        pla             ; address.
-        pla
-        lda #>wait
-        pha
-        lda #<wait
-        pha
-        lda $80
-        pha
-        rti
-        nop
-        nop
-        nop
-wait:   nop
-        nop
-        nop
-@1:     jmp @1
+        jsr waitkeyrelease
+@3:     lda trig0           ; wait until trigger is pressed
+        bne @3
+        ldx #$ff
+        txs
+        jmp replay
 
 ; convert hex value in A to two characters, high nibble returned
 ; in A, low nibble in X, Y clobbered with value of A
