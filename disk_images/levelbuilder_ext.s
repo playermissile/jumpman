@@ -153,6 +153,14 @@ startlevel:
         lda #$00
         sta $51c9
         jsr $3780       ; clear working data, reset audio
+
+        lda #0          ; player Y positions aren't cleared in 3780, so do it by hand
+        sta $306e       ; I must be missing an initialization routine somewhere
+        sta $306f
+        sta $3070
+        sta $3071
+        sta $3072
+
         jsr $3820       ; set up character set
         jsr $2640       ; show blank screen
         lda #$10
