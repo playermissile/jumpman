@@ -44,6 +44,8 @@ speed:
         .byte 3
 crashtesting:
         .byte 0
+usebrkhandler:
+        .byte 0
 
 
 ; graphics data here so display lists and screen data guaranteed not to cross
@@ -140,6 +142,8 @@ replaytrig0:
 
 
 xexinit: ; entry point for XEX boot
+        lda usebrkhandler
+        beq startlevel
         lda #<brkhandler
         sta vbreak
         lda #>brkhandler
@@ -180,8 +184,8 @@ r4400: ; replacement for 4400 to load level from memory rather than disk
         beq @cont
 
 ; move harvest grid to invalid position for peanut above and to left of Jumpman on Easy Does It
-        lda #$18
-        sta $8846
+;        lda #$18
+;        sta $8846
 
         lda #$f0
         sta $4102
