@@ -103,22 +103,23 @@ replaydl:
         .byte $70,$70,$70,$70
         .byte 7
         .byte $70,$70
-        .byte 7
+        .byte 7,7
         .byte $70,$70,$70
         .byte 7,7
         .byte $70
-        .byte 6,6,6,6
+;        .byte 6,6,6,6
         .byte $41,<replaydl,>replaydl
 
 replayscreen:
         ;          "01234567890123456789"
         scrcode    "   replay options   "
-        scrcode    "SPEED (1-8): "
+        scrcode    "   SPEED (1-8): "
 replayspeed:
-        scrcode                 "4      "
-        scrcode    "LIVES (9,0): "
+        scrcode                    "4   "
+        scrcode    "   ADDITIONAL       "
+        scrcode    "   LIVES (9,0): "
 replaylives:
-        scrcode                 "9      "
+        scrcode                    "9   "
         scrcode    "   press trigger    "
         scrcode    "      or start      "
         invscrcode "kbcode: "
