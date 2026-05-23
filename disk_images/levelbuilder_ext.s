@@ -38,6 +38,10 @@ setvbv = $e45c
 
         jmp xexinit
 
+magic:
+        .byte "JMII"
+version:
+        .byte 2
 numlives:
         .byte 6
 speed:
