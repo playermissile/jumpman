@@ -39,7 +39,7 @@ setvbv = $e45c
         jmp xexinit
 
 numlives:
-        .byte 0
+        .byte 6
 speed:
         .byte 3
 crashtesting:
