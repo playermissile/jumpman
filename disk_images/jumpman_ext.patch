@@ -58,6 +58,13 @@
         .org $11d7c
         .byte $07
 
+        ; add double width girder
+        .org $13b4c
+        .byte 8, 0, 0,  1, 1, 1, 1, 1, 1, 1, 1
+        .byte 8, 0, 1,  1, 0, 1, 0, 1, 0, 1, 0
+        .byte 8, 0, 2,  1, 1, 1, 1, 1, 1, 1, 1
+        .byte 0xff
+
         ; intercept end of game/next level check when not dead
         .org $14990
         .byte $4c

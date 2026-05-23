@@ -23,3 +23,10 @@
         .org $602e
         .byte $4c
         .word replay
+
+; add double width girder
+        .org $43bc
+        .byte 8, 0, 0,  1, 1, 1, 1, 1, 1, 1, 1
+        .byte 8, 0, 1,  1, 0, 1, 0, 1, 0, 1, 0
+        .byte 8, 0, 2,  1, 1, 1, 1, 1, 1, 1, 1
+        .byte 0xff
