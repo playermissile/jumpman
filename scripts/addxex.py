@@ -80,8 +80,14 @@ def add_data(src_path, options, extra_args):
         start = 16 + ((text_to_int(start) - 1) * 128)
         end = 16 + ((text_to_int(end)) * 128)
     else:
-        start = 0
-        end = np.alen(src)
+        if len(extra_args) > 0:
+            start = text_to_int(extra_args[0])
+        else:
+            start = 0
+        if len(extra_args) > 1:
+            end = text_to_int(extra_args[1])
+        else:
+            end = np.alen(src)
     data = src[start:end]
     start_addr = text_to_int(options.address)
     last_addr = start_addr + np.alen(data) - 1
