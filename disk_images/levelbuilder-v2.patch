@@ -1,0 +1,20 @@
+; level builder patches
+
+; replace gameloop pointer with $9000 (note: the level definition is loaded at 8800
+; but resides at 2800; the patch here has to point to the 8800 copy)
+        .org $883b
+        .word $9000
+
+; remove gameloop from 8800 copy to ensure it's running at 9000
+        .org $8860
+        .byte 0*$41
+
+; level name in new location
+        .org $885b
+        .byte $ff, $ec, $e5, $f6, $e5, $ec, $a0, $ee
+        .byte $e1, $ed, $e5, $a0, $e8, $e5, $f2, $e5
+        .byte $c0, $c0, $c0, $c0, $c0
+
+; remove old level name
+        .org $8beb
+        .byte 8*21

@@ -48,6 +48,10 @@ def add_bytes(data, num):
     else:
         data.append(num)
 
+def add_word(data, num):
+    hi, lo = divmod(num, 256)
+    data.extend([lo, hi])
+
 def iter_patch(patch_path, names):
     org = None
     offset = 0
@@ -76,6 +80,11 @@ def iter_patch(patch_path, names):
                     if v in names:
                         add_bytes(values, names[v])
                         info.append(f"{v}={names[v]:x}")
+                    elif "*" in v:
+                        v, rept = v.split("*")
+                        v = text_to_int(v)
+                        for i in range(text_to_int(rept)):
+                            add_bytes(values, v)
                     else:
                         add_bytes(values, text_to_int(v))
                 data.extend(values)
@@ -83,10 +92,27 @@ def iter_patch(patch_path, names):
                 values = []
                 for v in tokens:
                     if v in names:
-                        add_bytes(values, names[v])
+                        add_word(values, names[v])
                         info.append(f"{v}={names[v]:x}")
+                    elif "*" in v:
+                        v, rept = v.split("*")
+                        v = text_to_int(v)
+                        for i in range(text_to_int(rept)):
+                            add_word(values, v)
                     else:
-                        add_bytes(values, text_to_int(v))
+                        add_word(values, text_to_int(v))
+                data.extend(values)
+            elif cmd == ".copy":
+                values = []
+                for v in tokens:
+                    rept = 1
+                    if "*" in v:
+                        v, rept = v.split("*")
+                        rept = text_to_int(rept)
+                    if v in names:
+                        v = names[v]
+                        info.append(f"src={names[v]:x}")
+                    values = None
                 data.extend(values)
             elif cmd.endswith(":"):
                 values = []
