@@ -240,23 +240,7 @@ r500a:  jsr $331c
 copyscr: lda #$10
         ldy #$70
         ldx #$0f
-        jsr copypg
-        rts
-
-
-; copy pages. Source page in A, dest page in Y, num pages in X
-copypg: sta @1 + 2
-        sty @2 + 2
-        ldy #$00
-@1:     lda $ff00,y
-@2:     sta $ff00,y
-        iny
-        bne @1
-        inc @1 + 2
-        inc @2 + 2
-        dex
-        bne @1
-        rts
+        jmp copypg      ; use rts from copypg
 
 
 ; replacement for harvest table end. Patched into $4b46
@@ -333,50 +317,6 @@ ploop:
         txs
         jmp replay
 
-; convert hex value in A to two characters, high nibble returned
-; in A, low nibble in X, Y clobbered with value of A
-hex2text:
-        tay     ; save temporarily
-        and #$0f
-        cmp #$a
-        bcc @1
-        adc #6  ; oooh! Save a byte! Operation we want is +7, but carry is guaranteed to be set
-@1:     adc #16
-        tax
-        tya
-        lsr a
-        lsr a
-        lsr a
-        lsr a
-        cmp #$a
-        bcc @2
-        adc #6
-@2:     adc #16
-        rts
-
-; show display list and turn off anything behind the scenes, like audio, DLIs or VBIs.
-; High byte in X, low byte in Y for display list
-showdl:
-        sty sdlstl
-        sty dlistl
-        stx dlisth
-        stx sdlstl + 1
-        lda #$40
-        sta nmien
-        lda #0
-        sta audctl
-        sta audc1
-        sta audc2
-        sta audc3
-        sta audc4
-        lda #$14
-        sta gprior
-        sta prior
-        ldx #$e4
-        ldy #$62
-        lda #$07
-        jsr setvbv
-        rts
 
 ; Retry screen: after completing level or level failed, return to this screen to
 ; allow a replay. Speed and number of lives can be changed
@@ -478,10 +418,4 @@ replay:
 @run:
         jmp startlevel
 
-waitkeyrelease:
-@2:     lda consol          ; wait until any CONSOL button is released
-        cmp #7
-        bne @2
-@3:     lda trig0           ; wait until trigger is released
-        beq @3
-        rts
+.include "jumpman_ii_utils.s"
