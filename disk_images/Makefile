@@ -12,7 +12,7 @@ default : jumpman_ext.obj bootloader.obj practice.atr levelbuilder_ext.obj level
 jumpman_ext.obj : jumpman_ext.o jumpman_ext.lnk
 	ld65 -o jumpman_ext.obj -C jumpman_ext.lnk jumpman_ext.o
 
-jumpman_ext.lst jumpman_ext.o : jumpman_ext.s
+jumpman_ext.lst jumpman_ext.o : jumpman_ext.s jumpman_ii_title.s
 	ca65 -l jumpman_ext.lst jumpman_ext.s -o jumpman_ext.o
 
 boot_credits.obj : boot_credits.o boot_credits.lnk
@@ -51,17 +51,6 @@ levelbuilder-v2.xex: $(JUMPMAN_SRC) levelbuilder_ext.obj levelbuilder_ext.patch
 	$(PATCH) -o levelbuilder-v2.xex levelbuilder-v2.xex levelbuilder_ext.patch levelbuilder_ext.lst
 	$(PATCH) -o levelbuilder-v2.xex levelbuilder-v2.xex levelbuilder-v2.patch
 
-roomba.xex: $(JUMPMAN_SRC) levelbuilder_ext.obj levelbuilder_ext.patch
-	-rm roomba.xex
-	$(ADDXEX) -o roomba.xex -a 0x8800 roomba-with-jumpman-managed-dli.atr 0x196 0x996 # add a level
-	$(ADDXEX) -o roomba.xex -a 0x0a00 $(JUMPMAN_SRC) --atr 548 559 # add 0xa00-0xfff
-	$(ADDXEX) -o roomba.xex -a 0x2000 $(JUMPMAN_SRC) --atr 560 575  # add 0x2000-27ff
-	$(ADDXEX) -o roomba.xex -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
-	$(ADDXEX) -o roomba.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
-	$(ADDXEX) -o roomba.xex -a 0x8000 levelbuilder_ext.obj # add xex initialization
-	$(ADDXEX) -o roomba.xex -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
-	$(PATCH) -o roomba.xex roomba.xex levelbuilder_ext.patch levelbuilder_ext.lst
-
 bootloader.obj : bootloader.o bootloader.lnk
 	ld65 -o bootloader.obj -C bootloader.lnk bootloader.o
 
@@ -74,12 +63,12 @@ levelbuilder.atr: bootloader.obj levelbuilder_ext.obj levelbuilder.xex
 levelbuilder-v2.atr: bootloader.obj levelbuilder_ext.obj levelbuilder-v2.xex
 	$(XEX2ATR) -o levelbuilder-v2.atr -b bootloader.obj levelbuilder-v2.xex
 
-practice.atr: jumpman_ext.obj $(JUMPMAN_SRC) jumpman_ext.patch jumpman_ext.lst boot_credits.obj boot_credits.patch boot_credits.lst title_screen.patch
+practice.atr: jumpman_ext.obj $(JUMPMAN_SRC) jumpman_ext.patch jumpman_ext.lst boot_credits.obj boot_credits.patch boot_credits.lst jumpman_ii_title.patch
 	$(INSERT) -o practice.atr.~1 $(JUMPMAN_SRC) jumpman_ext.obj 88720
 	$(PATCH) -o practice.atr.~2 practice.atr.~1 jumpman_ext.patch jumpman_ext.lst
 	$(INSERT) -o practice.atr.~3 practice.atr.~2 boot_credits.obj 656
 	$(PATCH) -o practice.atr.~4 practice.atr.~3 boot_credits.patch boot_credits.lst
-	$(PATCH) -o practice.atr practice.atr.~4 title_screen.patch jumpman_ext.lst
+	$(PATCH) -o practice.atr practice.atr.~4 jumpman_ii_title.patch jumpman_ext.lst
 	$(RM) practice.atr.~?
 
 clean :

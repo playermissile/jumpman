@@ -403,34 +403,4 @@ levelnames:
         .byte $04,$e7,$ef,$e9,$ee,$e7,$c0,$e4,$ef,$f7,$ee,$df,$c0
         .byte $02,$e7,$f2,$e1,$ee,$e4,$c0,$f0,$f5,$fa,$fa,$ec,$e5,$c0,$e9,$e9,$e9
 
-jumpman_ii_title:
-        jsr $5400       ; plot the Jumpman logo that's been set up before this call
-        lda #$c2       ; get Jumpman graphic drawn in marquee
-        sta $e0        ; screen at 77bb
-        lda #$77
-        sta $e1
-        lda #$02       ; 2 bytes wide
-        sta $e6
-        lda #<ii_image       ; source pixmap
-        sta $e3
-        lda #>ii_image
-        sta $e4
-        lda #$0c       ; 12 lines high
-        sta $e9
-        lda #$01       ; x offset of 1
-        sta $e2
-        jmp $5ba0       ; go to the original target displays the copyright and uses its return
-
-ii_image:
-        .byte %00011111, %11111100
-        .byte %00111111, %11111000
-        .byte %00001100, %00110000
-        .byte %00001100, %00110000
-        .byte %00001100, %00110000
-        .byte %00001100, %00110000
-        .byte %00001100, %00110000
-        .byte %00001100, %00110000
-        .byte %00001100, %00110000
-        .byte %00001100, %00110000
-        .byte %00011111, %11111100
-        .byte %00111111, %11111000
+.include "jumpman_ii_title.s"
