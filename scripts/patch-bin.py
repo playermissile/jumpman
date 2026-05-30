@@ -62,6 +62,8 @@ def iter_patch(patch_path, names):
             line = line.lstrip()
             if not line or line.startswith(";"):
                 continue
+            if ";" in line:
+                line, _ = line.split(";", 1)
             # tokens are comma seperated values or space separated values
             cmd, args = line.split(None, 1)
             tokens = [x.strip() for x in args.split(',')]
