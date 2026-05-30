@@ -34,7 +34,7 @@ nmien = $d40e
 setvbv = $e45c
 
         .segment "JMHACK2"
-        .org $8000
+        .org $b000
 
         jmp xexinit
 

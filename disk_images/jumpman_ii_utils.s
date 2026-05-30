@@ -62,6 +62,17 @@ hex2text:
 @2:     adc #16
         rts
 
+hex2level:
+        jsr hex2text
+        pha
+        txa
+        ora #$30
+        tax
+        pla
+        ora #$30
+        rts
+
+
 
 ; show display list and turn off anything behind the scenes, like audio, DLIs or VBIs.
 ; High byte in X, low byte in Y for display list

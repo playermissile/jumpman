@@ -1,0 +1,27 @@
+; level storage v2 patches
+
+; relative offset in ATR file should be specified outside this file, as this
+; file can be also be applied to an XEX
+
+; change the level title location and sanity check
+        .org $4544
+        .word $286b
+        .org $4553
+        .word $286b
+
+; change level sanity check for 2800 has high bit set
+        .org $0fc3
+        .byte $30, $07          ; bmi +7
+        .byte $4c               ; jmp $455c
+        .word $455c
+        .byte $ea               ; nop
+
+; change level number display
+        .org $4500
+        .byte $ad, $01, $28     ; lda $2801
+        .byte $20               ; jsr hex2level
+        .word hex2level
+        .byte $8d               ; sta $4636
+        .word $4636
+        .byte $8e               ; stx $4637
+        .word $4637

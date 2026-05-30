@@ -7,7 +7,7 @@ INSERT = python ../scripts/insert-bin.py
 XEX2ATR = python ../scripts/xex2atr.py
 ADDXEX = python ../scripts/addxex.py
 
-default : jumpman_ext.obj bootloader.obj practice.atr levelbuilder_ext.obj levelbuilder.xex levelbuilder.atr levelbuilder-v2.xex levelbuilder-v2.atr
+default : jumpman_ext.obj bootloader.obj practice.atr levelbuilder_ext.obj levelbuilder.xex levelbuilder.atr levelbuilder2.xex levelbuilder2.atr
 
 jumpman_ext.obj : jumpman_ext.o jumpman_ext.lnk
 	ld65 -o jumpman_ext.obj -C jumpman_ext.lnk jumpman_ext.o
@@ -27,6 +27,12 @@ levelbuilder_ext.obj : levelbuilder_ext.o levelbuilder_ext.lnk
 levelbuilder_ext.lst levelbuilder_ext.o : levelbuilder_ext.s jumpman_ii_utils.s
 	ca65 -l levelbuilder_ext.lst levelbuilder_ext.s -o levelbuilder_ext.o
 
+levelbuilder2_ext.obj : levelbuilder2_ext.o levelbuilder2_ext.lnk
+	ld65 -o levelbuilder2_ext.obj -C levelbuilder2_ext.lnk levelbuilder2_ext.o
+
+levelbuilder2_ext.lst levelbuilder2_ext.o : levelbuilder2_ext.s jumpman_ii_utils.s jumpman_ii_level_storage.s
+	ca65 -l levelbuilder2_ext.lst levelbuilder2_ext.s -o levelbuilder2_ext.o
+
 levelbuilder.xex: $(JUMPMAN_SRC) levelbuilder_ext.obj levelbuilder_ext.patch
 	$(RM) levelbuilder.xex
 	$(ADDXEX) -o levelbuilder.xex -a 0x8800 $(JUMPMAN_SRC) --atr 17 32 # add Easy Does It
@@ -34,22 +40,23 @@ levelbuilder.xex: $(JUMPMAN_SRC) levelbuilder_ext.obj levelbuilder_ext.patch
 	$(ADDXEX) -o levelbuilder.xex -a 0x2000 $(JUMPMAN_SRC) --atr 560 575  # add 0x2000-27ff
 	$(ADDXEX) -o levelbuilder.xex -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
 	$(ADDXEX) -o levelbuilder.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
-	$(ADDXEX) -o levelbuilder.xex -a 0x8000 levelbuilder_ext.obj # add xex initialization
-	$(ADDXEX) -o levelbuilder.xex -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
+	$(ADDXEX) -o levelbuilder.xex -a 0xb000 levelbuilder_ext.obj # add xex initialization
+	$(ADDXEX) -o levelbuilder.xex -a 0x02e0 BYTES 0x00 0xb0 # add RUNINI
 	$(PATCH) -o levelbuilder.xex levelbuilder.xex levelbuilder_ext.patch levelbuilder_ext.lst
 
-levelbuilder-v2.xex: $(JUMPMAN_SRC) levelbuilder_ext.obj levelbuilder_ext.patch
-	$(RM) levelbuilder-v2.xex
-	$(ADDXEX) -o levelbuilder-v2.xex -a 0x8800 $(JUMPMAN_SRC) --atr 17 32 # add Easy Does It
-	$(ADDXEX) -o levelbuilder-v2.xex -a 0x0a00 $(JUMPMAN_SRC) --atr 548 559 # add 0xa00-0xfff
-	$(ADDXEX) -o levelbuilder-v2.xex -a 0x2000 $(JUMPMAN_SRC) --atr 560 575  # add 0x2000-27ff
-	$(ADDXEX) -o levelbuilder-v2.xex -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
-	$(ADDXEX) -o levelbuilder-v2.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
-	$(ADDXEX) -o levelbuilder-v2.xex -a 0x8000 levelbuilder_ext.obj # add xex initialization
-	$(ADDXEX) -o levelbuilder-v2.xex -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
-	$(ADDXEX) -o levelbuilder-v2.xex -a 0x9000 levelbuilder-v2.xex 0x86 0xa7 # add gameloop
-	$(PATCH) -o levelbuilder-v2.xex levelbuilder-v2.xex levelbuilder_ext.patch levelbuilder_ext.lst
-	$(PATCH) -o levelbuilder-v2.xex levelbuilder-v2.xex levelbuilder-v2.patch
+levelbuilder2.xex: $(JUMPMAN_SRC) levelbuilder2_ext.obj levelbuilder_ext.patch levelbuilder2_easydoesit.patch jumpman_ii_level_storage.patch
+	$(RM) levelbuilder2.xex
+	$(ADDXEX) -o levelbuilder2.xex -a 0x8800 $(JUMPMAN_SRC) --atr 17 32 # add Easy Does It
+	$(ADDXEX) -o levelbuilder2.xex -a 0x0a00 $(JUMPMAN_SRC) --atr 548 559 # add 0xa00-0xfff
+	$(ADDXEX) -o levelbuilder2.xex -a 0x2000 $(JUMPMAN_SRC) --atr 560 575  # add 0x2000-27ff
+	$(ADDXEX) -o levelbuilder2.xex -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
+	$(ADDXEX) -o levelbuilder2.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
+	$(ADDXEX) -o levelbuilder2.xex -a 0xb000 levelbuilder2_ext.obj # add xex initialization
+	$(ADDXEX) -o levelbuilder2.xex -a 0x02e0 BYTES 0x00 0xb0 # add RUNINI
+	$(ADDXEX) -o levelbuilder2.xex -a 0x9000 levelbuilder2.xex 0x86 0xa7 # add gameloop
+	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex levelbuilder_ext.patch levelbuilder2_ext.lst
+	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex levelbuilder2_easydoesit.patch
+	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex jumpman_ii_level_storage.patch levelbuilder2_ext.lst
 
 bootloader.obj : bootloader.o bootloader.lnk
 	ld65 -o bootloader.obj -C bootloader.lnk bootloader.o
@@ -60,8 +67,8 @@ bootloader.lst bootloader.o : bootloader.s
 levelbuilder.atr: bootloader.obj levelbuilder_ext.obj levelbuilder.xex
 	$(XEX2ATR) -o levelbuilder.atr -b bootloader.obj levelbuilder.xex
 
-levelbuilder-v2.atr: bootloader.obj levelbuilder_ext.obj levelbuilder-v2.xex
-	$(XEX2ATR) -o levelbuilder-v2.atr -b bootloader.obj levelbuilder-v2.xex
+levelbuilder2.atr: bootloader.obj levelbuilder_ext.obj levelbuilder2.xex
+	$(XEX2ATR) -o levelbuilder2.atr -b bootloader.obj levelbuilder2.xex
 
 practice.atr: jumpman_ext.obj $(JUMPMAN_SRC) jumpman_ext.patch jumpman_ext.lst boot_credits.obj boot_credits.patch boot_credits.lst jumpman_ii_title.patch
 	$(INSERT) -o practice.atr.~1 $(JUMPMAN_SRC) jumpman_ext.obj 88720
@@ -74,5 +81,5 @@ practice.atr: jumpman_ext.obj $(JUMPMAN_SRC) jumpman_ext.patch jumpman_ext.lst b
 clean :
 	$(RM) *.o *.obj *~ *~[0-9] *.map *.lst
 	$(RM) practice.atr
-	$(RM) levelbuilder.atr levelbuilder-v2.atr
-	$(RM) levelbuilder.xex levelbuilder-v2.xex
+	$(RM) levelbuilder.atr levelbuilder2.atr
+	$(RM) levelbuilder.xex levelbuilder2.xex
