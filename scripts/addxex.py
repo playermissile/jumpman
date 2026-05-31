@@ -69,26 +69,29 @@ def add_xexboot_header(bytes, bootcode):
 def add_data(src_path, options, extra_args):
     if src_path == "BYTES":
         src_data = [text_to_int(i) for i in extra_args]
-        src = np.array(src_data, dtype=np.uint8)
+        data = np.array(src_data, dtype=np.uint8)
+    elif src_path == "ZEROS":
+        size = text_to_int(extra_args[0])
+        data = np.zeros(size, dtype=np.uint8)
     else:
         src = np.fromfile(src_path, dtype=np.uint8)
-    if options.atr:
-        start = options.atr[0]
-        end = options.atr[1]
-        if src[0] != 0x96 or src[1] != 0x02:
-           raise RuntimeError("ATR specified, but ATR header not found")
-        start = 16 + ((text_to_int(start) - 1) * 128)
-        end = 16 + ((text_to_int(end)) * 128)
-    else:
-        if len(extra_args) > 0:
-            start = text_to_int(extra_args[0])
+        if options.atr:
+            start = options.atr[0]
+            end = options.atr[1]
+            if src[0] != 0x96 or src[1] != 0x02:
+                raise RuntimeError("ATR specified, but ATR header not found")
+            start = 16 + ((text_to_int(start) - 1) * 128)
+            end = 16 + ((text_to_int(end)) * 128)
         else:
-            start = 0
-        if len(extra_args) > 1:
-            end = text_to_int(extra_args[1])
-        else:
-            end = np.alen(src)
-    data = src[start:end]
+            if len(extra_args) > 0:
+                start = text_to_int(extra_args[0])
+            else:
+                start = 0
+            if len(extra_args) > 1:
+                end = text_to_int(extra_args[1])
+            else:
+                end = np.alen(src)
+        data = src[start:end]
     start_addr = text_to_int(options.address)
     last_addr = start_addr + np.alen(data) - 1
     header = np.array([start_addr & 0xff, start_addr >> 8, last_addr & 0xff, last_addr >> 8], dtype=np.uint8)

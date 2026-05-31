@@ -76,6 +76,12 @@ def iter_patch(patch_path, names):
                 org = text_to_int(tokens[0])
             elif cmd == ".offset":
                 offset = text_to_int(tokens[0])
+            elif cmd == ".file":
+                path = tokens[0]
+                data = np.fromfile(path, dtype=np.uint8)
+                yield offset + org, offset + org + len(data), data, info
+                org += len(data)
+                data = []
             elif cmd == ".byte":
                 values = []
                 for v in tokens:
@@ -154,7 +160,7 @@ class XEX:
                 raise RuntimeError("Short Segment Header")
             start, end = b[pos:pos + 4].view(dtype='<u2')
             if end < start:
-                raise RuntimeError("Nonsensical start and end addresses")
+                raise RuntimeError(f"end address {end:x} less than start {start:x}")
             count = end - start + 1
             found = len(b[pos + 4:pos + 4 + count])
             if found < count:

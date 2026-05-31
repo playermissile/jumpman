@@ -30,7 +30,7 @@ levelbuilder_ext.lst levelbuilder_ext.o : levelbuilder_ext.s jumpman_ii_utils.s
 levelbuilder2_ext.obj : levelbuilder2_ext.o levelbuilder2_ext.lnk
 	ld65 -o levelbuilder2_ext.obj -C levelbuilder2_ext.lnk levelbuilder2_ext.o
 
-levelbuilder2_ext.lst levelbuilder2_ext.o : levelbuilder2_ext.s jumpman_ii_utils.s jumpman_ii_level_storage.s
+levelbuilder2_ext.lst levelbuilder2_ext.o : levelbuilder_ext.s levelbuilder2_ext.s jumpman_ii_utils.s jumpman_ii_level_storage.s
 	ca65 -l levelbuilder2_ext.lst levelbuilder2_ext.s -o levelbuilder2_ext.o
 
 levelbuilder.xex: $(JUMPMAN_SRC) levelbuilder_ext.obj levelbuilder_ext.patch
@@ -40,22 +40,21 @@ levelbuilder.xex: $(JUMPMAN_SRC) levelbuilder_ext.obj levelbuilder_ext.patch
 	$(ADDXEX) -o levelbuilder.xex -a 0x2000 $(JUMPMAN_SRC) --atr 560 575  # add 0x2000-27ff
 	$(ADDXEX) -o levelbuilder.xex -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
 	$(ADDXEX) -o levelbuilder.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
-	$(ADDXEX) -o levelbuilder.xex -a 0xb000 levelbuilder_ext.obj # add xex initialization
-	$(ADDXEX) -o levelbuilder.xex -a 0x02e0 BYTES 0x00 0xb0 # add RUNINI
+	$(ADDXEX) -o levelbuilder.xex -a 0x8000 levelbuilder_ext.obj # add xex initialization
+	$(ADDXEX) -o levelbuilder.xex -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
 	$(PATCH) -o levelbuilder.xex levelbuilder.xex levelbuilder_ext.patch levelbuilder_ext.lst
 
-levelbuilder2.xex: $(JUMPMAN_SRC) levelbuilder2_ext.obj levelbuilder_ext.patch levelbuilder2_easydoesit.patch jumpman_ii_level_storage.patch
+levelbuilder2.xex: $(JUMPMAN_SRC) levelbuilder_ext.obj levelbuilder2_ext.obj levelbuilder_ext.patch levelbuilder2_insert_level.patch easydoesit.v2.bin jumpman_ii_level_storage.patch
 	$(RM) levelbuilder2.xex
-	$(ADDXEX) -o levelbuilder2.xex -a 0x8800 $(JUMPMAN_SRC) --atr 17 32 # add Easy Does It
+	$(ADDXEX) -o levelbuilder2.xex -a 0x9000 ZEROS 0x1080 # add space for level
 	$(ADDXEX) -o levelbuilder2.xex -a 0x0a00 $(JUMPMAN_SRC) --atr 548 559 # add 0xa00-0xfff
 	$(ADDXEX) -o levelbuilder2.xex -a 0x2000 $(JUMPMAN_SRC) --atr 560 575  # add 0x2000-27ff
 	$(ADDXEX) -o levelbuilder2.xex -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
 	$(ADDXEX) -o levelbuilder2.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
-	$(ADDXEX) -o levelbuilder2.xex -a 0xb000 levelbuilder2_ext.obj # add xex initialization
-	$(ADDXEX) -o levelbuilder2.xex -a 0x02e0 BYTES 0x00 0xb0 # add RUNINI
-	$(ADDXEX) -o levelbuilder2.xex -a 0x9000 levelbuilder2.xex 0x86 0xa7 # add gameloop
+	$(ADDXEX) -o levelbuilder2.xex -a 0x8000 levelbuilder2_ext.obj # add xex initialization
+	$(ADDXEX) -o levelbuilder2.xex -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
 	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex levelbuilder_ext.patch levelbuilder2_ext.lst
-	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex levelbuilder2_easydoesit.patch
+	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex levelbuilder2_insert_level.patch
 	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex jumpman_ii_level_storage.patch levelbuilder2_ext.lst
 
 bootloader.obj : bootloader.o bootloader.lnk
