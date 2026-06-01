@@ -1,4 +1,4 @@
-; Levelbuilder test code
+; Levelbuilder test code common to both level storage formats
 ;
 ; Copyright (c) 2016,2026 Rob McMullen <feedback@playermissile.com>
 ; Copyright (c) 2016,2026 Kay Savetz <antic@ataripodcast.com>
@@ -191,10 +191,7 @@ r4400: ; replacement for 4400 to load level from memory rather than disk
         lda #0
         sta $4107       ; enable SELECT to cause crash
 
-@cont:  lda #$88        ; copy working level to $2800
-        ldy #$28
-        ldx #$8
-        jsr copypg
+@cont:  jsr copy_level_to_memory ; defined in level 1 or level 2 format code
 
         lda numlives
         sta $30f0

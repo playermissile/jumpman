@@ -1,5 +1,5 @@
 ; level builder patches
 
 ; use sample file data
-        .org $9000
+        .org $8f80
         .file easydoesit.v2.bin
