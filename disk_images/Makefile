@@ -7,7 +7,7 @@ INSERT = python ../scripts/insert-bin.py
 XEX2ATR = python ../scripts/xex2atr.py
 ADDXEX = python ../scripts/addxex.py
 
-default : jumpman_ext.obj bootloader.obj practice.atr levelbuilder1_ext.obj levelbuilder1.xex levelbuilder1.atr levelbuilder2.xex levelbuilder2.atr
+default : jumpman_ext.obj bootloader.obj practice.atr levelbuilder1_ext.obj levelbuilder1.xex levelbuilder1.atr levelbuilder2.xex levelbuilder2.atr levelbuilder2-lz4.atr
 
 jumpman_ext.obj : jumpman_ext.o jumpman_ext.lnk
 	ld65 -o jumpman_ext.obj -C jumpman_ext.lnk jumpman_ext.o
@@ -51,11 +51,14 @@ levelbuilder2.xex: $(JUMPMAN_SRC) levelbuilder1_ext.obj levelbuilder2_ext.obj le
 	$(ADDXEX) -o levelbuilder2.xex -a 0x2000 $(JUMPMAN_SRC) --atr 560 575  # add 0x2000-27ff
 	$(ADDXEX) -o levelbuilder2.xex -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
 	$(ADDXEX) -o levelbuilder2.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
-	$(ADDXEX) -o levelbuilder2.xex -a 0x8000 levelbuilder2_ext.obj # add xex initialization
 	$(ADDXEX) -o levelbuilder2.xex -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
+	$(ADDXEX) -o levelbuilder2.xex -a 0x8000 levelbuilder2_ext.obj # add xex initialization
 	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex levelbuilder1_ext.patch levelbuilder2_ext.lst
 	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex levelbuilder2_insert_level.patch
 	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex jumpman_ii_level_storage.patch levelbuilder2_ext.lst
+
+levelbuilder2-lz4.xex: levelbuilder2.xex levelbuilder2_insert_level-lz4.patch easydoesit.v2.lz4.bin
+	$(PATCH) -o levelbuilder2-lz4.xex levelbuilder2.xex levelbuilder2_insert_level-lz4.patch
 
 bootloader.obj : bootloader.o bootloader.lnk
 	ld65 -o bootloader.obj -C bootloader.lnk bootloader.o
@@ -69,6 +72,9 @@ levelbuilder1.atr: bootloader.obj levelbuilder1_ext.obj levelbuilder1.xex
 levelbuilder2.atr: bootloader.obj levelbuilder1_ext.obj levelbuilder2.xex
 	$(XEX2ATR) -o levelbuilder2.atr -b bootloader.obj levelbuilder2.xex
 
+levelbuilder2-lz4.atr: bootloader.obj levelbuilder2-lz4.xex
+	$(XEX2ATR) -o levelbuilder2-lz4.atr -b bootloader.obj levelbuilder2-lz4.xex
+
 practice.atr: jumpman_ext.obj $(JUMPMAN_SRC) jumpman_ext.patch jumpman_ext.lst boot_credits.obj boot_credits.patch boot_credits.lst jumpman_ii_title.patch
 	$(INSERT) -o practice.atr.~1 $(JUMPMAN_SRC) jumpman_ext.obj 88720
 	$(PATCH) -o practice.atr.~2 practice.atr.~1 jumpman_ext.patch jumpman_ext.lst
@@ -80,5 +86,5 @@ practice.atr: jumpman_ext.obj $(JUMPMAN_SRC) jumpman_ext.patch jumpman_ext.lst b
 clean :
 	$(RM) *.o *.obj *~ *~[0-9] *.map *.lst
 	$(RM) practice.atr
-	$(RM) levelbuilder1.atr levelbuilder2.atr
-	$(RM) levelbuilder1.xex levelbuilder2.xex
+	$(RM) levelbuilder1.atr levelbuilder2.atr levelbuilder2-lz4.atr
+	$(RM) levelbuilder1.xex levelbuilder2.xex levelbuilder2-lz4.xex
