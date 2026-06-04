@@ -102,8 +102,15 @@ def add_data(src_path, options, extra_args):
     try:
         existing = np.fromfile(options.output, dtype=np.uint8)
     except FileNotFoundError:
-        existing = np.array([0xff, 0xff], dtype=np.uint8)
-    dest = np.concatenate((existing, header, data))
+        if options.raw:
+            existing = np.empty([0], dtype=np.uint8)
+        else:
+            existing = np.array([0xff, 0xff], dtype=np.uint8)
+
+    if options.raw:
+        dest = np.concatenate((existing, data))
+    else:
+        dest = np.concatenate((existing, header, data))
     print(dest, np.alen(dest))
     dest.tofile(options.output)
 
@@ -119,6 +126,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="debug the currently under-development parser")
     parser.add_argument("-o", "--output", default="", help="output file")
     parser.add_argument("-a", "--address", default="0", type=str, help="address for segment")
+    parser.add_argument("-r", "--raw", action="store_true", default=False, help="output raw binary data without XEX header")
     parser.add_argument("--atr", nargs=2, help="use START and END sector numbers in ATR file")
     options, extra_args = parser.parse_known_args()
 
