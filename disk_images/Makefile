@@ -7,7 +7,7 @@ INSERT = python ../scripts/insert-bin.py
 XEX2ATR = python ../scripts/xex2atr.py
 ADDXEX = python ../scripts/addxex.py
 
-default : jumpman_ext.obj bootloader.obj practice.atr levelbuilder1_ext.obj levelbuilder1.xex levelbuilder1.atr levelbuilder2.xex levelbuilder2.atr levelbuilder2-lz4.atr
+default : jumpman_ext.obj bootloader.obj practice.atr levelbuilder1_ext.obj levelbuilder1.xex levelbuilder1.atr levelbuilder2.xex levelbuilder2.atr levelbuilder2-lz4.atr levelbuilder-unified.xex
 
 jumpman_ext.obj : jumpman_ext.o jumpman_ext.lnk
 	ld65 -o jumpman_ext.obj -C jumpman_ext.lnk jumpman_ext.o
@@ -33,6 +33,12 @@ levelbuilder2_ext.obj : levelbuilder2_ext.o levelbuilder2_ext.lnk
 levelbuilder2_ext.lst levelbuilder2_ext.o : levelbuilder1_ext.s levelbuilder2_ext.s jumpman_ii_utils.s jumpman_ii_level_storage.s
 	ca65 -l levelbuilder2_ext.lst levelbuilder2_ext.s -o levelbuilder2_ext.o
 
+levelbuilder-unified.obj : levelbuilder-unified.o levelbuilder-unified.lnk
+	ld65 -o levelbuilder-unified.obj -C levelbuilder-unified.lnk levelbuilder-unified.o
+
+levelbuilder-unified.lst levelbuilder-unified.o : levelbuilder1_ext.s levelbuilder-unified.s jumpman_ii_utils.s
+	ca65 -l levelbuilder-unified.lst levelbuilder-unified.s -o levelbuilder-unified.o
+
 levelbuilder1.xex: $(JUMPMAN_SRC) levelbuilder1_ext.obj levelbuilder1_ext.patch
 	$(RM) levelbuilder1.xex
 	$(ADDXEX) -o levelbuilder1.xex -a 0x8800 $(JUMPMAN_SRC) --atr 17 32 # add Easy Does It
@@ -40,8 +46,8 @@ levelbuilder1.xex: $(JUMPMAN_SRC) levelbuilder1_ext.obj levelbuilder1_ext.patch
 	$(ADDXEX) -o levelbuilder1.xex -a 0x2000 $(JUMPMAN_SRC) --atr 560 575  # add 0x2000-27ff
 	$(ADDXEX) -o levelbuilder1.xex -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
 	$(ADDXEX) -o levelbuilder1.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
-	$(ADDXEX) -o levelbuilder1.xex -a 0x8000 levelbuilder1_ext.obj # add xex initialization
 	$(ADDXEX) -o levelbuilder1.xex -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
+	$(ADDXEX) -o levelbuilder1.xex -a 0x8000 levelbuilder1_ext.obj # add xex initialization
 	$(PATCH) -o levelbuilder1.xex levelbuilder1.xex levelbuilder1_ext.patch levelbuilder1_ext.lst
 
 levelbuilder2.xex: $(JUMPMAN_SRC) levelbuilder1_ext.obj levelbuilder2_ext.obj levelbuilder1_ext.patch levelbuilder2_insert_level.patch easydoesit.v2.bin jumpman_ii_level_storage.patch
@@ -56,6 +62,21 @@ levelbuilder2.xex: $(JUMPMAN_SRC) levelbuilder1_ext.obj levelbuilder2_ext.obj le
 	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex levelbuilder1_ext.patch levelbuilder2_ext.lst
 	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex levelbuilder2_insert_level.patch
 	$(PATCH) -o levelbuilder2.xex levelbuilder2.xex jumpman_ii_level_storage.patch levelbuilder2_ext.lst
+
+levelbuilder-unified.xex: $(JUMPMAN_SRC) levelbuilder-unified.obj levelbuilder1_ext.patch levelbuilder-unified_insert_level.patch easydoesit.v2.bin
+	$(RM) levelbuilder-unified.xex
+	$(ADDXEX) -o levelbuilder-unified.xex -a 0x2800 ZEROS 0x800 # add space for Block A or original level
+#	$(ADDXEX) -o levelbuilder-unified.xex -a 0x2800 $(JUMPMAN_SRC) --atr 17 32 # add Easy Does It
+	$(ADDXEX) -o levelbuilder-unified.xex -a 0x0a00 $(JUMPMAN_SRC) --atr 548 559 # add 0xa00-0xfff
+	$(ADDXEX) -o levelbuilder-unified.xex -a 0x2000 $(JUMPMAN_SRC) --atr 560 575  # add 0x2000-27ff
+	$(ADDXEX) -o levelbuilder-unified.xex -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
+	$(ADDXEX) -o levelbuilder-unified.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
+	$(ADDXEX) -o levelbuilder-unified.xex -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
+	$(ADDXEX) -o levelbuilder-unified.xex -a 0x8000 levelbuilder-unified.obj # add xex initialization
+	$(ADDXEX) -o levelbuilder-unified.xex -a 0xa800 GAMELOOP # add standard gameloop
+	$(PATCH) -o levelbuilder-unified.xex levelbuilder-unified.xex levelbuilder1_ext.patch levelbuilder-unified.lst
+	$(PATCH) -o levelbuilder-unified.xex levelbuilder-unified.xex levelbuilder-unified_insert_level.patch
+	$(PATCH) -o levelbuilder-unified.xex levelbuilder-unified.xex levelbuilder-unified.patch levelbuilder-unified.lst
 
 levelbuilder2-lz4.xex: levelbuilder2.xex levelbuilder2_insert_level-lz4.patch easydoesit.v2.lz4.bin
 	$(PATCH) -o levelbuilder2-lz4.xex levelbuilder2.xex levelbuilder2_insert_level-lz4.patch
@@ -86,5 +107,5 @@ practice.atr: jumpman_ext.obj $(JUMPMAN_SRC) jumpman_ext.patch jumpman_ext.lst b
 clean :
 	$(RM) *.o *.obj *~ *~[0-9] *.map *.lst
 	$(RM) practice.atr
-	$(RM) levelbuilder1.atr levelbuilder2.atr levelbuilder2-lz4.atr
-	$(RM) levelbuilder1.xex levelbuilder2.xex levelbuilder2-lz4.xex
+	$(RM) levelbuilder1.atr levelbuilder2.atr levelbuilder2-lz4.atr levelbuilder-unified.atr
+	$(RM) levelbuilder1.xex levelbuilder2.xex levelbuilder2-lz4.xex levelbuilder-unified.xex

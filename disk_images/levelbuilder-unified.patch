@@ -1,0 +1,23 @@
+; level storage unified patches
+
+; relative offset in ATR file should be specified outside this file, as this
+; file can be also be applied to an XEX
+
+; Code at fc0 stores the level number for version 1 storage, but it's overwritten
+; at code at 4500. But we can handle two versions if we leave this here and check
+; for version 2 at 4500. We can skip overwriting if version 1, and make the change
+; if it's version 2
+; 0fc0 L0fc0 lda L2800
+; 0fc3       sta L4636
+; 0fc6       lda L2801
+; 0fc9       sta L4637
+; 0fcc       jmp L4ca0
+
+
+; change level number display
+        .org $4503
+        .byte $10, $07          ; bmi +7
+        .byte $ea               ; nop
+        .org $4509
+        .byte $20               ; jsr v2_level_number
+        .word v2_level_number
