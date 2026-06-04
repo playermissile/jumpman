@@ -7,11 +7,12 @@
 ; score handling in v2
 ;
 
-; the score in v1 is pulled from 2800 and 2801 here
+; the level number in v1 is pulled from 2800 and 2801 here
 ;0fc0       lda L2800
 ;0fc3       sta L4636
 ;0fc6       lda L2801
 ;0fc9       sta L4637
+;0fcc       jmp L4ca0
 
 ; but 2800 and 2801 are stored again later on in the load process at 4500
 ;4500       lda L2800
@@ -21,7 +22,7 @@
 ;
 ; so 0fc3 should then be:
 ;0fc3:  bmi $0fcc
-;0fc5:  jmp $455c
+;0fc5:  jmp $455c       ; exit; not v2 level format
 ;0fc8:  nop
 ;0fc9: <unchanged sta $4637>
 ;0fcc: <unchanged jmp $4ca0>
