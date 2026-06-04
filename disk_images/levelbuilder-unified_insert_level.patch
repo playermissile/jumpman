@@ -1,5 +1,0 @@
-; level builder patches
-
-; use sample file data
-        .org $2800
-        .file easydoesit.v2.bin
