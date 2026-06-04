@@ -60,7 +60,20 @@ def iter_patch(patch_path, names):
     if len(options.address) > 0:
         # using patch_path as a binary file
         org = text_to_int(options.address)
-        data = np.fromfile(patch_path, dtype=np.uint8)
+        if patch_path == "HEX":
+            src_data = [text_to_int(i, "hex") for i in extra_args]
+            data = np.array(src_data, dtype=np.uint8)
+        elif patch_path == "BYTES":
+            src_data = [text_to_int(i) for i in extra_args]
+            data = np.array(src_data, dtype=np.uint8)
+        elif patch_path == "ZEROS":
+            count = text_to_int(extra_args[0])
+            data = np.zeros([count], dtype=np.uint8)
+        elif patch_path == "GAMELOOP":
+            src_data = [text_to_int(i, "hex") for i in "20 D0 49 20 00 4B AD 3E 28 C9 00 F0 11 AD BE 30 C9 08 90 EF AD F0 30 C9 FF D0 E5 4C 3F 28 6C 44 28".split()]
+            data = np.array(src_data, dtype=np.uint8)
+        else:
+            data = np.fromfile(patch_path, dtype=np.uint8)
         yield offset + org, offset + org + len(data), data, info
         return
     with open(patch_path) as fh:
@@ -229,7 +242,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", default="", help="output file")
     parser.add_argument("-a", "--address", default="", type=str, help="use patch_file as binary and insert at this address")
     options, extra_args = parser.parse_known_args()
-    if extra_args:
+    if extra_args and options.patch_file != "HEX" and options.patch_file != "BYTES" and options.patch_file != "ZEROS" and options.patch_file != "GAMELOOP":
         list_file = extra_args[0]
     else:
         list_file = ""
