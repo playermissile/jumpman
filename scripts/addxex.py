@@ -73,6 +73,9 @@ def add_data(src_path, options, extra_args):
     elif src_path == "ZEROS":
         size = text_to_int(extra_args[0])
         data = np.zeros(size, dtype=np.uint8)
+    elif src_path == "GAMELOOP":
+        src_data = [text_to_int(i, "hex") for i in "20 D0 49 20 00 4B AD 3E 28 C9 00 F0 11 AD BE 30 C9 08 90 EF AD F0 30 C9 FF D0 E5 4C 3F 28 6C 44 28".split()]
+        data = np.array(src_data, dtype=np.uint8)
     else:
         src = np.fromfile(src_path, dtype=np.uint8)
         if options.atr:
