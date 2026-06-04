@@ -57,6 +57,12 @@ def iter_patch(patch_path, names):
     offset = 0
     data = []
     info = []
+    if len(options.address) > 0:
+        # using patch_path as a binary file
+        org = text_to_int(options.address)
+        data = np.fromfile(patch_path, dtype=np.uint8)
+        yield offset + org, offset + org + len(data), data, info
+        return
     with open(patch_path) as fh:
         for line in fh.readlines():
             line = line.lstrip()
@@ -221,6 +227,7 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", default=0, action="count")
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="debug the currently under-development parser")
     parser.add_argument("-o", "--output", default="", help="output file")
+    parser.add_argument("-a", "--address", default="", type=str, help="use patch_file as binary and insert at this address")
     options, extra_args = parser.parse_known_args()
     if extra_args:
         list_file = extra_args[0]
