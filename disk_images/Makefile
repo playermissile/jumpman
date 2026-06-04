@@ -7,7 +7,7 @@ INSERT = python ../scripts/insert-bin.py
 XEX2ATR = python ../scripts/xex2atr.py
 ADDXEX = python ../scripts/addxex.py
 
-default : jumpman_ext.obj bootloader.obj practice.atr levelbuilder-v1-easydoesit.xex levelbuilder-v2-easydoesit.xex levelbuilder-unified.atr
+default : jumpman_ext.obj bootloader.obj practice.atr levelbuilder-v1-easydoesit.xex levelbuilder-v2-easydoesit.xex levelbuilder-unified.atr levelbuilder-unified-with-block-b.atr
 
 jumpman_ext.obj : jumpman_ext.o jumpman_ext.lnk
 	ld65 -o jumpman_ext.obj -C jumpman_ext.lnk jumpman_ext.o
@@ -35,7 +35,9 @@ levelbuilder-unified.xex: $(JUMPMAN_SRC) levelbuilder-unified.obj levelbuilder-u
 	$(ADDXEX) -o levelbuilder-unified.xex -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
 	$(ADDXEX) -o levelbuilder-unified.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
 	$(ADDXEX) -o levelbuilder-unified.xex -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
-	$(ADDXEX) -o levelbuilder-unified.xex -a 0x8000 levelbuilder-unified.obj # add xex initialization
+	$(ADDXEX) -o levelbuilder-unified.xex -a 0x8000 ZEROS 0x1000 # add space for custom code
+	$(ADDXEX) -o levelbuilder-unified.xex -a 0xa800 ZEROS 0x1000 # add space for Block B
+	$(PATCH) -o levelbuilder-unified.xex levelbuilder-unified.xex -a 0x8000 levelbuilder-unified.obj # add xex initialization
 	$(PATCH) -o levelbuilder-unified.xex levelbuilder-unified.xex levelbuilder-unified.patch levelbuilder-unified.lst
 
 easydoesit.v1.bin:
@@ -43,19 +45,25 @@ easydoesit.v1.bin:
 
 levelbuilder-v1-easydoesit.xex: levelbuilder-unified.xex easydoesit.v1.bin
 	$(PATCH) -o levelbuilder-v1-easydoesit.xex levelbuilder-unified.xex -a 0x2800 easydoesit.v1.bin
+	$(PATCH) -o levelbuilder-v1-easydoesit.xex levelbuilder-v1-easydoesit.xex -a 0x2bec HEX ec e5 f6 e5 ec a0 ee e1 ed e5 a0 e8 e5 f2 e5 c0 c0 c0 c0 c0
+
+levelbuilder-unified.atr: bootloader.obj levelbuilder-v1-easydoesit.xex
+	$(XEX2ATR) -o levelbuilder-unified.atr -b bootloader.obj levelbuilder-v1-easydoesit.xex
 
 levelbuilder-v2-easydoesit.xex: levelbuilder-unified.xex easydoesit.v2.bin
 	$(PATCH) -o levelbuilder-v2-easydoesit.xex levelbuilder-unified.xex -a 0x2800 easydoesit.v2.bin
-	$(ADDXEX) -o levelbuilder-v2-easydoesit.xex -a 0xa800 GAMELOOP # add standard gameloop
+	$(PATCH) -o levelbuilder-v2-easydoesit.xex levelbuilder-v2-easydoesit.xex -a 0x2868 ZEROS 0x1
+	$(PATCH) -o levelbuilder-v2-easydoesit.xex levelbuilder-v2-easydoesit.xex -a 0x29f4 ZEROS 0x21
+	$(PATCH) -o levelbuilder-v2-easydoesit.xex levelbuilder-v2-easydoesit.xex -a 0xa800 GAMELOOP # add standard gameloop
+
+levelbuilder-unified-with-block-b.atr: bootloader.obj levelbuilder-v2-easydoesit.xex
+	$(XEX2ATR) -o levelbuilder-unified-with-block-b.atr -b bootloader.obj levelbuilder-v2-easydoesit.xex
 
 bootloader.obj : bootloader.o bootloader.lnk
 	ld65 -o bootloader.obj -C bootloader.lnk bootloader.o
 
 bootloader.lst bootloader.o : bootloader.s
 	ca65 -l bootloader.lst bootloader.s -o bootloader.o
-
-levelbuilder-unified.atr: bootloader.obj levelbuilder-v1-easydoesit.xex
-	$(XEX2ATR) -o levelbuilder-unified.atr -b bootloader.obj levelbuilder-v1-easydoesit.xex
 
 practice.atr: jumpman_ext.obj $(JUMPMAN_SRC) jumpman_ext.patch jumpman_ext.lst boot_credits.obj boot_credits.patch boot_credits.lst jumpman_ii_title.patch
 	$(INSERT) -o practice.atr.~1 $(JUMPMAN_SRC) jumpman_ext.obj 88720
