@@ -171,10 +171,12 @@ class XEX:
 
     def patch(self, start, end, data, info):
         for b, s, e in self.segments:
-            if start >= s and end <= e:
+            # NOTE: numpy end and XEX segment end are reported differently.
+            # numpy 0:2 means bytes 0 and 1, where XEX 0:1 means bytes 0 and 1
+            if start >= s and end <= e+1:
                 b[start - s + 4:end - s + 4] = data
                 txt = " ".join(info)
-                print(f"patched {start:x}-{end:x} in {s:x}-{e:x}: {len(data):x} bytes {txt}")
+                print(f"patched {start:x}-{end-1:x} in {s:x}-{e:x}: {len(data):x} bytes {txt}")
                 break
         else:
             RuntimeError(f"range {start}-{end} not in segments")
