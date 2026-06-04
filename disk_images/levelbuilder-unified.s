@@ -137,6 +137,7 @@ replaytrig0:
 
 
 xexinit: ; entry point for XEX boot
+        jsr save_levels
 
 startlevel:
         lda #$00
@@ -419,11 +420,7 @@ replay:
 @run:
         jmp startlevel
 
-
-copy_level_to_memory:
-        sec
-        bcc @load_level
-@save_level:            ; first time through, save the level for replay
+save_levels:
         lda #$28        ; copy Block A to storage for replay
         ldy #$90
         ldx #$08
@@ -432,11 +429,9 @@ copy_level_to_memory:
         ldy #$98
         ldx #$10
         jsr copypg
-        lda #$18        ; CLC instruction
-        sta copy_level_to_memory
         rts
 
-@load_level:            ; after first time, load pristine copy of level from storage
+copy_level_to_memory:
         lda #$90        ; copy Block A storage to $2800
         ldy #$28
         ldx #$08
