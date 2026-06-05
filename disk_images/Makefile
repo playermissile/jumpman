@@ -6,6 +6,9 @@ PATCH = python ../scripts/patch-bin.py
 INSERT = python ../scripts/insert-bin.py
 XEX2ATR = python ../scripts/xex2atr.py
 ADDXEX = python ../scripts/addxex.py
+CP = cp
+MV = mv
+OUT = tmp.bin
 
 default : jumpman_ext.obj bootloader.obj practice.atr levelbuilder-v1-easydoesit.xex levelbuilder-v2-easydoesit.xex levelbuilder-unified.atr levelbuilder-unified-with-block-b.atr
 
@@ -28,33 +31,36 @@ levelbuilder-unified.lst levelbuilder-unified.o : levelbuilder-unified.s jumpman
 	ca65 -l levelbuilder-unified.lst levelbuilder-unified.s -o levelbuilder-unified.o
 
 levelbuilder-unified.xex: $(JUMPMAN_SRC) levelbuilder-unified.obj levelbuilder-unified.patch
-	$(RM) levelbuilder-unified.xex
-	$(ADDXEX) -o levelbuilder-unified.xex -a 0x2800 ZEROS 0x800 # add space for Block A or original level
-	$(ADDXEX) -o levelbuilder-unified.xex -a 0x0a00 $(JUMPMAN_SRC) --atr 548 559 # add 0xa00-0xfff
-	$(ADDXEX) -o levelbuilder-unified.xex -a 0x2000 $(JUMPMAN_SRC) --atr 560 575  # add 0x2000-27ff
-	$(ADDXEX) -o levelbuilder-unified.xex -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
-	$(ADDXEX) -o levelbuilder-unified.xex -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
-	$(ADDXEX) -o levelbuilder-unified.xex -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
-	$(ADDXEX) -o levelbuilder-unified.xex -a 0x8000 ZEROS 0x1000 # add space for custom code
-	$(ADDXEX) -o levelbuilder-unified.xex -a 0xa800 ZEROS 0x1000 # add space for Block B
-	$(PATCH) -o levelbuilder-unified.xex levelbuilder-unified.xex -a 0x8000 levelbuilder-unified.obj # add xex initialization
-	$(PATCH) -o levelbuilder-unified.xex levelbuilder-unified.xex levelbuilder-unified.patch levelbuilder-unified.lst
+	$(RM) $(OUT)
+	$(ADDXEX) -o $(OUT) -a 0x2800 ZEROS 0x800 # add space for Block A or original level
+	$(ADDXEX) -o $(OUT) -a 0x0a00 $(JUMPMAN_SRC) --atr 548 559 # add 0xa00-0xfff
+	$(ADDXEX) -o $(OUT) -a 0x2000 $(JUMPMAN_SRC) --atr 560 575  # add 0x2000-27ff
+	$(ADDXEX) -o $(OUT) -a 0x3000 $(JUMPMAN_SRC) --atr 592 693  # add 0x3000-62ff
+	$(ADDXEX) -o $(OUT) -a 0x6800 $(JUMPMAN_SRC) --atr 704 719 # add 0x6800-6fffd
+	$(ADDXEX) -o $(OUT) -a 0x02e0 BYTES 0x00 0x80 # add RUNINI
+	$(ADDXEX) -o $(OUT) -a 0x8000 ZEROS 0x1000 # add space for custom code
+	$(ADDXEX) -o $(OUT) -a 0xa800 ZEROS 0x1000 # add space for Block B
+	$(PATCH) -o $(OUT) $(OUT) -a 0x8000 levelbuilder-unified.obj # add xex initialization
+	$(PATCH) -o $(OUT) $(OUT) levelbuilder-unified.patch levelbuilder-unified.lst
+	$(MV) $(OUT) levelbuilder-unified.xex
 
 easydoesit.v1.bin:
 	$(ADDXEX) -o easydoesit.v1.bin -r $(JUMPMAN_SRC) --atr 17 32 # extract Easy Does It
 
 levelbuilder-v1-easydoesit.xex: levelbuilder-unified.xex easydoesit.v1.bin
-	$(PATCH) -o levelbuilder-v1-easydoesit.xex levelbuilder-unified.xex -a 0x2800 easydoesit.v1.bin
-	$(PATCH) -o levelbuilder-v1-easydoesit.xex levelbuilder-v1-easydoesit.xex -a 0x2bec HEX ec e5 f6 e5 ec a0 ee e1 ed e5 a0 e8 e5 f2 e5 c0 c0 c0 c0 c0
+	$(PATCH) -o $(OUT) levelbuilder-unified.xex -a 0x2800 easydoesit.v1.bin
+	$(PATCH) -o $(OUT) $(OUT) -a 0x2bec HEX ec e5 f6 e5 ec a0 ee e1 ed e5 a0 e8 e5 f2 e5 c0 c0 c0 c0 c0
+	$(MV) $(OUT) levelbuilder-v1-easydoesit.xex
 
 levelbuilder-unified.atr: bootloader.obj levelbuilder-v1-easydoesit.xex
 	$(XEX2ATR) -o levelbuilder-unified.atr -b bootloader.obj levelbuilder-v1-easydoesit.xex
 
 levelbuilder-v2-easydoesit.xex: levelbuilder-unified.xex easydoesit.v2.bin
-	$(PATCH) -o levelbuilder-v2-easydoesit.xex levelbuilder-unified.xex -a 0x2800 easydoesit.v2.bin
-	$(PATCH) -o levelbuilder-v2-easydoesit.xex levelbuilder-v2-easydoesit.xex -a 0x2868 ZEROS 0x1
-	$(PATCH) -o levelbuilder-v2-easydoesit.xex levelbuilder-v2-easydoesit.xex -a 0x29f4 ZEROS 0x21
-	$(PATCH) -o levelbuilder-v2-easydoesit.xex levelbuilder-v2-easydoesit.xex -a 0xa800 GAMELOOP # add standard gameloop
+	$(PATCH) -o $(OUT) levelbuilder-unified.xex -a 0x2800 easydoesit.v2.bin
+	$(PATCH) -o $(OUT) $(OUT) -a 0x2868 ZEROS 0x1
+	$(PATCH) -o $(OUT) $(OUT) -a 0x29f4 ZEROS 0x21
+	$(PATCH) -o $(OUT) $(OUT) -a 0xa800 GAMELOOP # add standard gameloop
+	$(MV) $(OUT) levelbuilder-v2-easydoesit.xex
 
 levelbuilder-unified-with-block-b.atr: bootloader.obj levelbuilder-v2-easydoesit.xex
 	$(XEX2ATR) -o levelbuilder-unified-with-block-b.atr -b bootloader.obj levelbuilder-v2-easydoesit.xex
