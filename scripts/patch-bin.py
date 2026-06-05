@@ -110,6 +110,20 @@ def iter_patch(patch_path, names):
                 add_word(data, target)
                 yield offset + addr, offset + addr + 2, data, info
         return
+    else:
+        try:
+            src = np.fromfile(patch_path, dtype=np.uint8)
+            xex = XEX(src)
+            for b, s, e in xex.segments:
+                data = b[4:4 + (e + 1) - s]
+                info = [f"{patch_path} {s:x}-{e:x}"]
+                if options.debug:
+                    print(f"inserting {len(data):x} bytes from segment ({s:x}-{e:x})")
+                yield offset + s, offset + s + len(data), data, info
+            return
+        except RuntimeError:
+            # Not an XEX file, continue
+            pass
     with open(patch_path) as fh:
         for line in fh.readlines():
             line = line.lstrip()
@@ -227,9 +241,9 @@ class XEX:
             # NOTE: numpy end and XEX segment end are reported differently.
             # numpy 0:2 means bytes 0 and 1, where XEX 0:1 means bytes 0 and 1
             if start >= s and end <= e+1:
-                b[start - s + 4:end - s + 4] = data
                 txt = " ".join(info)
                 print(f"patched {start:x}-{end-1:x} in {s:x}-{e:x}: {len(data):x} bytes {txt}")
+                b[start - s + 4:end - s + 4] = data
                 break
         else:
             RuntimeError(f"range {start}-{end} not in segments")
@@ -259,7 +273,7 @@ def patch_image(src_path, patch_path, list_path, dest_path):
     else:
         names = {}
 
-    if src_path.lower().endswith("xex"):
+    if src[0] == 0xff and src[1] == 0xff:
         f = XEX(src)
     else:
         f = ATR(src)
