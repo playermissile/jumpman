@@ -72,12 +72,12 @@ bootloader.lst bootloader.o : bootloader.s
 	ca65 -l bootloader.lst bootloader.s -o bootloader.o
 
 practice.atr: jumpman_ext.obj $(JUMPMAN_SRC) jumpman_ext.patch jumpman_ext.lst boot_credits.obj boot_credits.patch boot_credits.lst jumpman_ii_title.patch
-	$(INSERT) -o practice.atr.~1 $(JUMPMAN_SRC) jumpman_ext.obj 88720
-	$(PATCH) -o practice.atr.~2 practice.atr.~1 jumpman_ext.patch jumpman_ext.lst
-	$(INSERT) -o practice.atr.~3 practice.atr.~2 boot_credits.obj 656
-	$(PATCH) -o practice.atr.~4 practice.atr.~3 boot_credits.patch boot_credits.lst
-	$(PATCH) -o practice.atr practice.atr.~4 jumpman_ii_title.patch jumpman_ext.lst
-	$(RM) practice.atr.~?
+	$(PATCH) -o $(OUT) $(JUMPMAN_SRC) -a 88720 jumpman_ext.obj
+	$(PATCH) -o $(OUT) $(OUT) jumpman_ext.patch jumpman_ext.lst
+	$(PATCH) -o $(OUT) $(OUT) -a 656 boot_credits.obj
+	$(PATCH) -o $(OUT) $(OUT) boot_credits.patch boot_credits.lst
+	$(PATCH) -o $(OUT) $(OUT) jumpman_ii_title.patch jumpman_ext.lst
+	$(MV) $(OUT) practice.atr
 
 clean :
 	$(RM) *.o *.obj *~ *~[0-9] *.map *.lst
