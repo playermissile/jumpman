@@ -41,6 +41,30 @@ def nm(list_path):
                 names[label] = int(pc, 16)
     return names
 
+jumpman_locations = {
+    'vbi1': 0x2802,
+    'vbi2': 0x2804,
+    'vbi3': 0x2806,
+    'vbi4': 0x2808,
+    'dead_begin': 0x2810,
+    'dead_at_bottom': 0x2812,
+    'dead_falling': 0x2814,
+    'gameloop': 0x283b,
+#    'level_init': 0x283b, # same as gameloop
+    'out_of_lives': 0x2840,
+    'collect_callback': 0x2849,
+}
+
+def parse_atasm_labels(label_file):
+    labels = {}
+    with open(label_file, "r") as fh:
+        for line in fh.readlines():
+            #print(line)
+            addr, label = line.split()
+            labels[label.lower()] = int(addr, 16)
+    if options.debug: print(labels)
+    return labels
+
 def add_bytes(data, num):
     if num > 255:
         hi, lo = divmod(num, 256)
@@ -75,6 +99,16 @@ def iter_patch(patch_path, names):
         else:
             data = np.fromfile(patch_path, dtype=np.uint8)
         yield offset + org, offset + org + len(data), data, info
+        return
+    elif options.jumpman:
+        names = parse_atasm_labels(patch_path)
+        for label, addr in jumpman_locations.items():
+            if label in names:
+                data = []
+                info = [f"{label} ({addr:x})={names[label]:x}"]
+                target = names[label]
+                add_word(data, target)
+                yield offset + addr, offset + addr + 2, data, info
         return
     with open(patch_path) as fh:
         for line in fh.readlines():
@@ -241,6 +275,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="debug the currently under-development parser")
     parser.add_argument("-o", "--output", default="", help="output file")
     parser.add_argument("-a", "--address", default="", type=str, help="use patch_file as binary and insert at this address")
+    parser.add_argument("-j", "--jumpman", action="store_true", default=False, help="use patch_file as jumpman level labels and patch function calls")
     options, extra_args = parser.parse_known_args()
     if extra_args and options.patch_file != "HEX" and options.patch_file != "BYTES" and options.patch_file != "ZEROS" and options.patch_file != "GAMELOOP":
         list_file = extra_args[0]
